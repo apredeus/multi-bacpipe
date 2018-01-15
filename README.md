@@ -1,13 +1,19 @@
 # bacpipe
 A pipeline for simple and efficient processing of bacterial RNA-seq.
-<img align="right" width="100" height="100" src="https://www.soulseeds.com/wp-content/uploads/2013/10/bagpipes-joke.jpg">
+<img align="right" width="281" height="330" src="https://www.soulseeds.com/wp-content/uploads/2013/10/bagpipes-joke.jpg">
 
 ## Author
 [Alexander Predeus](https://www.researchgate.net/profile/Alexander_Predeus), [Jay Hinton Laboratory](http://www.hintonlab.com/), [University of Liverpool](https://www.liverpool.ac.uk/)
-(c) 2018
+(c) 2018, GPL v3 license
 
 ## Motivation
 RNA-seq processing includes multiple steps, with best practices often varying between different species and laboratories. This pipeline deals with quality control, alignment, visualization, and quantification of bacterial RNA-seq experiments. 
+
+When successfully applied, this should generate:
+* genomic bam files for 
+* tdf/bigWig files for visualization
+* three expression tables - from [featureCounts](http://subread.sourceforge.net/), [rsem](https://deweylab.github.io/RSEM/), and [kallisto](https://pachterlab.github.io/kallisto/); 
+* a single [MultiQC](http://multiqc.info/) quality control report.
 
 ## Installation and requirements 
 Clone the pipeline scripts into your home directory and add them to $PATH variable in bash: 
