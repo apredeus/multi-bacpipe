@@ -1,31 +1,35 @@
 # bacpipe
-A pipeline for processing of bacterial RNA-seq
+A pipeline for simple and efficient processing of bacterial RNA-seq.
+![bacpipe](https://www.soulseeds.com/wp-content/uploads/2013/10/bagpipes-joke.jpg)
 
 ## Author
 [Alexander Predeus](https://www.researchgate.net/profile/Alexander_Predeus), [Jay Hinton Laboratory](http://www.hintonlab.com/), [University of Liverpool](https://www.liverpool.ac.uk/)
+(c) 2018
+
+## Motivation
+RNA-seq processing includes multiple steps, with best practices often varying between different species and laboratories. This pipeline deals with quality control, alignment, visualization, and quantification of bacterial RNA-seq experiments. 
 
 ## Installation and requirements 
 Clone the pipeline scripts into your home directory and add them to $PATH variable in bash: 
 
-`cd ~`
-`git clone https://github.com/apredeus/bacpipe`
-`echo "export ~/bacpipe:$PATH" >> .bashrc`
-
+```cd ~
+git clone https://github.com/apredeus/bacpipe
+echo "export ~/bacpipe:$PATH" >> .bashrc```
 
 To install the requirements, use [Bioconda](https://bioconda.github.io/). These are the programs that need to be installed: 
 
-`conda install fastqc`
-`conda install bowtie2`
-`conda install samtools`
-`conda install bedtools` 
-`conda install picard`
-`conda install igvtools` 
-`conda install rsem`
-`conda install kallisto` 
-`conda install subread`
+```conda install fastqc
+conda install bowtie2
+conda install samtools
+conda install bedtools
+conda install picard
+conda install igvtools
+conda install rsem
+conda install kallisto
+conda install subread```
 
 ## Reference preparation
-In order to start using the pipeline, you would need two things: a genomic *fasta* file, and genome annotation in *gff3* format. It is very much recommended to develop a system of "tags" that you would use to identify references; for example, if you are processing data for P125109 strain of Salmonella enterica, and intend to use the assembly and annotation available from NCBI, rename the downloaded files to P125109_ncbi.fa and P125109_ncbi.gff3. After you set the reference directory, and run the reference-maker script, all of the reference indexes etc would be appropriately named and placed. For example, rsem reference would be in $REFDIR/rsem/P125109_ncbi_rsem, bowtie2 reference in $REFDIR/bowtie2/P125109_ncbi.\*.bt2, and so on. 
+In order to start using the pipeline, you would need two things: a genomic *fasta* file, and genome annotation in *gff3* format. It is very much recommended to develop a system of "tags" that you would use to identify references; for example, if you are processing data for P125109 strain of Salmonella enterica, and intend to use the assembly and annotation available from NCBI, rename the downloaded files to **P125109_ncbi.fa** and **P125109_ncbi.gff3**. After you set the reference directory, and run the reference-maker script, all of the reference indexes etc would be appropriately named and placed. For example, rsem reference would be in $REFDIR/rsem/P125109_ncbi_rsem, bowtie2 reference in $REFDIR/bowtie2/P125109_ncbi.\*.bt2, and so on. 
 
 After you have procured the *fasta* and the *gff3* and selected a (writeable) reference directory, simply run 
 
@@ -38,7 +42,7 @@ After all the references are successfully created, simply run
 
 Bacpipe needs to be ran in a writeable directory with fastqs folder in it. 
 
-Bacpipe
+Bacpipe:
 * handles archived (.gz) and non-archived fastq files; 
 * handles single-end and paired-end reads; 
 * automatically detects strand-specificity of the experiment; 
