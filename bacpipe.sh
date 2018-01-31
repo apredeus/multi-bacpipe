@@ -36,31 +36,31 @@ else
 fi
 
 echo "Step 1: Running FastQC.."
-#./prun_fastqc.sh
+./prun_fastqc.sh
 echo 
 echo "=================================================================================="
 echo
 
 echo "Step 2: Running rRNA evaluation and alignment.."
-#./prun_bowtie2.sh $REFDIR $SPECIES $CPUS
+./prun_bowtie2.sh $REFDIR $SPECIES $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "Step 3: Making TDF and strand-specific bigWig files.." 
-#./prun_coverage.sh $REFDIR $SPECIES $CPUS
+./prun_coverage.sh $REFDIR $SPECIES $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "Step 4: Running featureCounts on all possible strand settings.."
-#./prun_strand.sh $REFDIR $SPECIES $CPUS
+./prun_strand.sh $REFDIR $SPECIES $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "Step 5: Calculating strandedness and other statistics.."
-#./prun_stat.sh $CPUS
+./prun_stat.sh $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -93,7 +93,7 @@ echo "==========================================================================
 echo
 
 echo "Step 7: Running RSEM on normal and extended annotation.."
-#./prun_rsem.sh $REFDIR $SPECIES $CPUS $STRAND
+./prun_rsem.sh $REFDIR $SPECIES $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo

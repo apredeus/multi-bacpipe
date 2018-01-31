@@ -8,8 +8,7 @@ SPECIES=$3
 STRAND=$4
 FLAG=""
 
-REF=$REFDIR/Assemblies/$SPECIES.CDS.gff
-NCREF=$REFDIR/Assemblies/$SPECIES.ncRNA.gff
+REF=$REFDIR/Assemblies/$SPECIES.genes.gff
 #EXTREF=$REFDIR/Assemblies/$SPECIES.extended.gff
 
 if [[ $TAG == "" || $SPECIES == "" || $REFDIR == "" ]]
@@ -38,6 +37,5 @@ fi
 
 #featureCounts -t CDS   -g ID -O -s $FLAG -a $EXTREF -o $TAG.fc.extended.CDS.tsv   $TAG.bam &> $TAG.fc.extended.CDS.log
 #featureCounts -t ncRNA -g ID -O -s $FLAG -a $EXTREF -o $TAG.fc.extended.ncRNA.tsv $TAG.bam &> $TAG.fc.extended.ncRNA.log
-featureCounts -t ncRNA -g ID -O -s $FLAG -a $NCREF   -o $TAG.fc.ncRNA.tsv          $TAG.bam &> $TAG.fc.ncRNA.log
-cp ../strand/$TAG.fc.s$FLAG.tsv $TAG.fc.CDS.tsv 
-cp ../strand/logs/$TAG.fc.s$FLAG.log $TAG.fc.CDS.log
+cp ../strand/$TAG.fc.s$FLAG.tsv $TAG.fc.tsv 
+cp ../strand/logs/$TAG.fc.s$FLAG.log $TAG.fc.log
