@@ -22,11 +22,11 @@ fi
 
 if [[ -e $TAG.fastq.gz ]]
 then 
-  echo "bowtie2: processing sample $TAG as single-ended, using bowtie2 index $REF."
+  echo "bowtie2: processing sample $TAG as single-ended."
   READS="-U $WDIR/$TAG.fastq.gz"
 elif [[ -e $TAG.R1.fastq.gz && -e $TAG.R2.fastq.gz ]]
 then
-  echo "bowtie2: processing sample $TAG as paired-ended, using bowtie2 index $REF."
+  echo "bowtie2: processing sample $TAG as paired-ended."
   READS="-1 $WDIR/$TAG.R1.fastq.gz -2 $WDIR/$TAG.R2.fastq.gz"
 else
   echo "ERROR: The reqiured fastq.gz files were not found!" 
@@ -45,6 +45,7 @@ bowtie2 --very-sensitive-local -t -p $CPUS -S $TAG.sam -x $REF -U $TAG.nortrna.f
 samtools view -bS -q 10 $TAG.sam > $TAG.bam
 samtools sort -@ $CPUS -T $TAG -o $TAG.sorted.bam $TAG.bam &> /dev/null 
 mv $TAG.sorted.bam $TAG.bam
+gzip -c $TAG.nortrna.fastq > ../cleaned_fastqs/$TAG.fastq.gz 
 rm $TAG.sam $TAG.norrna.fastq $TAG.nortrna.fastq
 samtools index $TAG.bam 
 

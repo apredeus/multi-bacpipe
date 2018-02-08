@@ -12,8 +12,7 @@ for i in *bam
 do
   TAG=${i%%.bam}
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  echo "Making bigWig and TDF files for tag $i.." 
-  ../calculate_coverage.sh $TAG $REFDIR $SPECIES &> $TAG.coverage.log & 
+  ../calculate_coverage.sh $TAG $REFDIR $SPECIES & 
 done
 wait
 
@@ -24,5 +23,3 @@ mv ../bams/*bw .
 mv ../bams/*coverage.log logs 
 
 echo "ALL COVERAGE CALCULATIONS ARE DONE!"
-echo
-echo

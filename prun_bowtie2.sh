@@ -23,7 +23,6 @@ do
 done
 wait
 
-mv *_rrna.log *_trna.log ../rtRNA
 cd ../bams 
 mkdir logs 
 mv ../fastqs/*bam .
@@ -31,5 +30,3 @@ mv ../fastqs/*bam.bai .
 mv ../fastqs/*log logs 
 
 echo "ALL BOWTIE2 ALIGMENT IS DONE!"
-echo
-echo

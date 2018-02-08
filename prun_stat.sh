@@ -15,5 +15,3 @@ done
 mv *.rnastat ../../stats 
 
 echo "ALL RNA-STAT CALCULATIONS ARE DONE!"
-echo
-echo

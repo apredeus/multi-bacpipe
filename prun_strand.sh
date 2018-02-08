@@ -25,5 +25,3 @@ mv ../bams/*.fc.*log logs
 mv ../bams/*.fc.*tsv . 
 
 echo "ALL STRANDEDNESS EVALUATION IS DONE!"
-echo
-echo

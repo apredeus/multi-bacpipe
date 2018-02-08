@@ -11,13 +11,16 @@ else
   exit 1
 fi
 
-if [[ ! -d bams || ! -d stats || ! -d strand || ! -d tdfs_and_bws || ! -d RSEM || ! -d featureCounts || ! -d FastQC || ! -d rtRNA  ]]
+if [[ ! -d bams || ! -d stats || ! -d strand || ! -d tdfs_and_bws || \
+! -d RSEM || ! -d featureCounts || ! -d FastQC || \
+! -d kallisto || ! -d exp_tables || ! -d cleaned_fastqs ]]
 then
   echo "One of the required directories is missing, I will try to create them..."
-  mkdir bams stats strand tdfs_and_bws RSEM featureCounts FastQC rtRNA 
-else 
+  mkdir bams stats strand tdfs_and_bws RSEM exp_tables
+  mkdir featureCounts FastQC rtRNA kallisto cleaned_fastqs
+else
   echo "All the necessary directories found, continuing..." 
-fi 
+fi
 
 #cp ~/bacpipe/*sh .
 
@@ -35,42 +38,42 @@ else
   echo "Parallel jobs will be ran on $CPUS cores."
 fi
 
-echo "Step 1: Running FastQC.."
-./prun_fastqc.sh
+echo "["`date +%H:%M:%S`"] Step 1: Running FastQC.."
+./prun_fastqc.sh $CPUS
 echo 
 echo "=================================================================================="
 echo
 
-echo "Step 2: Running rRNA evaluation and alignment.."
+echo "["`date +%H:%M:%S`"] Step 2: Running rRNA evaluation and alignment.."
 ./prun_bowtie2.sh $REFDIR $SPECIES $CPUS
 echo 
 echo "=================================================================================="
 echo
 
-echo "Step 3: Making TDF and strand-specific bigWig files.." 
+echo "["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files.." 
 ./prun_coverage.sh $REFDIR $SPECIES $CPUS
 echo 
 echo "=================================================================================="
 echo
 
-echo "Step 4: Running featureCounts on all possible strand settings.."
+echo "["`date +%H:%M:%S`"] Step 4: Running featureCounts on all possible strand settings.."
 ./prun_strand.sh $REFDIR $SPECIES $CPUS
 echo 
 echo "=================================================================================="
 echo
 
-echo "Step 5: Calculating strandedness and other statistics.."
+echo "["`date +%H:%M:%S`"] Step 5: Calculating strandedness and other statistics.."
 ./prun_stat.sh $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 cd stats
-cat *rnastat | awk 'BEGIN {min=100;max=0} {sum+=$16; if($16>max) \
+cat *.strand | awk 'BEGIN {min=100;max=0} {sum+=$16; if($16>max) \
 {max=$16}; if($16<min) {min=$16};} END {print "Average percent of \
 reads matching the coding strand: "sum/NR", lowest: "min", highest: "max}'
 
-STRAND=`cat *rnastat | awk '{sum+=$16} END {x=sum/NR; if (x<10) \
+STRAND=`cat *.strand | awk '{sum+=$16} END {x=sum/NR; if (x<10) \
 {print "RF"} else if (x>90) {print "FR"} else if (x>45 && x<55) \
 {print "NONE"} else {print "ERROR"}}'` 
 
@@ -86,16 +89,29 @@ echo
 echo "=================================================================================="
 echo
 
-echo "Step 6: Running featureCounts on normal and extended annotation.."
+echo "["`date +%H:%M:%S`"] Step 6: Running featureCounts on normal and extended annotation.."
 ./prun_fcount.sh $REFDIR $SPECIES $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo
 
-echo "Step 7: Running RSEM on normal and extended annotation.."
+echo "["`date +%H:%M:%S`"] Step 7: Running kallisto on normal and extended annotation.."
+./prun_kallisto.sh $REFDIR $SPECIES $CPUS $STRAND
+echo 
+echo "=================================================================================="
+echo
+
+echo "["`date +%H:%M:%S`"] Step 8: Running RSEM on normal and extended annotation.."
 ./prun_rsem.sh $REFDIR $SPECIES $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo
 
-echo "All processing is now complete!"
+echo "["`date +%H:%M:%S`"] Step 9: Making final expression tables.."
+./make_tables.sh $REFDIR $SPECIES $CPUS
+echo 
+echo "=================================================================================="
+echo
+
+
+echo "["`date +%H:%M:%S`"] ALL PROCESSING IS NOW COMPLETE!"

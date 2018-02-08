@@ -77,9 +77,20 @@ bowtie2-build --quiet $TAG.tRNA.fa $TAG.tRNA
 bowtie2-build --quiet $TAG.rRNA.fa $TAG.rRNA 
 
 ##   8) rsem/kallisto reference - skip this for now
+perl -ne '@t=split/\t+/; $t[8]=~m/ID=(.*?);.*/; printf "%s\t%d\t%d\t%s\t%s\t%s\n",$t[0],$t[3]-1,$t[4],$1,$t[5],$t[6]' \
+$TAG.gene.gff > $TAG.tr.bed 
+bedtools getfasta -name -s -fi $TAG.genome.fa -bed $TAG.tr.bed | sed "s/[()+-]//g" > $TAG.tr.fa 
+rm $TAG.tr.bed 
+kallisto index -i ${TAG}_kallisto $TAG.tr.fa
+source activate rsem
+rsem-prepare-reference $TAG.tr.fa ${TAG}_rsem
+bowtie2-build $TAG.tr.fa ${TAG}_rsem
 
 ##   9) copy to appropriate locations
+mv ${TAG}_rsem.*.bt2 $REFDIR/RSEM
 mv *bt2 $REFDIR/bowtie2
-mv $TAG.genome.fa $TAG.tRNA.fa $TAG.rRNA.fa $REFDIR/Assemblies
+mv $TAG.genome.fa $TAG.tRNA.fa $TAG.rRNA.fa $TAG.tr.fa $REFDIR/Assemblies
 mv $TAG.gene.gff $TAG.CDS.gff $TAG.ncRNA.gff $REFDIR/Assemblies
 mv $TAG.genome.fa.fai $TAG.chrom.sizes $TAG.3col $REFDIR/Assemblies
+mv ${TAG}_rsem* $REFDIR/RSEM
+mv ${TAG}_kallisto $REFDIR/kallisto 
