@@ -21,8 +21,11 @@ then
 else
   echo "All the necessary directories found, continuing..." 
 fi
+echo 
+echo "=================================================================================="
+echo
 
-#cp ~/bacpipe/*sh .
+cp ~/bacpipe/*sh .
 
 if [[ $SPECIES == "" || $REFDIR == "" ]]
 then
