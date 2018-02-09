@@ -1,9 +1,10 @@
 #!/bin/bash 
 
-REFDIR=$1
-SPECIES=$2
-CPUS=$3
-STRAND=$4
+WDIR=$1
+REFDIR=$2
+SPECIES=$3
+CPUS=$4
+STRAND=$5
 
 REF=$REFDIR/RSEM/${SPECIES}_rsem
 if [[ -e $REF.ti ]]
@@ -14,7 +15,7 @@ else
 fi 
 
 source activate rsem
-cd cleaned_fastqs 
+cd $WDIR/cleaned_fastqs 
 
 KK=`for i in *fastq.gz
 do 
@@ -26,7 +27,7 @@ done | sort | uniq`
 for i in $KK
 do 
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  ../rsem_quant.sh $i $REF $STRAND & 
+  rsem_quant.sh $i $WDIR $REF $STRAND & 
 done
 wait
 

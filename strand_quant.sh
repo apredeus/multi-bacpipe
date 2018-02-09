@@ -3,9 +3,11 @@
 ## PIPELINE VERSION
 
 TAG=$1
-REFDIR=$2
-SPECIES=$3
+WDIR=$2
+REFDIR=$3
+SPECIES=$4
 REF=$REFDIR/Assemblies/$SPECIES.gene.gff
+cd $WDIR/bams 
 
 if [[ $TAG == "" || $SPECIES == "" || $REFDIR == "" ]]
 then 

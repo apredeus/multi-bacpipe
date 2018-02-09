@@ -2,18 +2,19 @@
 
 ## PIPELINE VERSION
 
-REFDIR=$1
-SPECIES=$2
-CPUS=$3
-STRAND=$4
+WDIR=$1
+REFDIR=$2
+SPECIES=$3
+CPUS=$4
+STRAND=$5
 
-cd bams
+cd $WDIR/bams
 
 for i in *.bam 
 do 
   TAG=${i%%.bam}
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  ../fcount_quant.sh $TAG $REFDIR $SPECIES $STRAND & 
+  fcount_quant.sh $TAG $WDIR $REFDIR $SPECIES $STRAND & 
 done
 
 wait

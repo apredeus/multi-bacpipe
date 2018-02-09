@@ -2,9 +2,10 @@
 
 ## PIPELINE VERSION
 
-CPUS=$1
+WDIR=$1
+CPUS=$2
 
-cd fastqs
+cd $WDIR/fastqs
 
 for i in *.fastq.gz
 do

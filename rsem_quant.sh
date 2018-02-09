@@ -3,8 +3,10 @@
 ## PIPELINE VERSION
 
 TAG=$1
-REF=$2
-STRAND=$3
+WDIR=$2
+REF=$3
+STRAND=$4
+cd $WDIR/cleaned_fastqs 
 
 READS=""
 

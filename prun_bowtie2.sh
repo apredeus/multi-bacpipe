@@ -2,12 +2,13 @@
 
 ## PIPELINE VERSION
 
-cd fastqs
-
-REFDIR=$1
-SPECIES=$2
-CPUS=$3 ## how many cores for individual jobs
+WDIR=$1
+REFDIR=$2
+SPECIES=$3
+CPUS=$4
 NJOB=$((CPUS/4))
+
+cd $WDIR/fastqs
 
 KK=`for i in *fastq.gz
 do 
@@ -19,7 +20,7 @@ done | sort | uniq`
 for i in $KK
 do
   while [ $(jobs | wc -l) -ge $NJOB ] ; do sleep 5; done
-  ../bowtie2_align.sh $i $REFDIR $SPECIES 4 &
+  bowtie2_align.sh $i $WDIR $REFDIR $SPECIES 4 &
 done
 wait
 

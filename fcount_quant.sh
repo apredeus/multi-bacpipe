@@ -3,13 +3,15 @@
 ## PIPELINE VERSION
 
 TAG=$1
-REFDIR=$2
-SPECIES=$3
-STRAND=$4
+WDIR=$2
+REFDIR=$3
+SPECIES=$4
+STRAND=$5
 FLAG=""
 
 REF=$REFDIR/Assemblies/$SPECIES.genes.gff
 #EXTREF=$REFDIR/Assemblies/$SPECIES.extended.gff
+cd $WDIR/featureCounts
 
 if [[ $TAG == "" || $SPECIES == "" || $REFDIR == "" ]]
 then 

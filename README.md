@@ -33,7 +33,6 @@ conda install fastqc
 conda install bowtie2
 conda install samtools
 conda install bedtools
-conda install picard
 conda install igvtools
 conda install rsem
 conda install kallisto

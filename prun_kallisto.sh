@@ -1,9 +1,11 @@
 #!/bin/bash 
 
-REFDIR=$1
-SPECIES=$2
-CPUS=$3
-STRAND=$4
+WDIR=$1
+REFDIR=$2
+SPECIES=$3
+CPUS=$4
+STRAND=$5
+cd $WDIR/cleaned_fastqs 
 
 REF=$REFDIR/kallisto/${SPECIES}_kallisto
 if [[ -e $REF ]]
@@ -13,7 +15,6 @@ else
   echo "ERROR: kallisto reference $REF not found!" 
 fi 
 
-cd cleaned_fastqs 
 
 KK=`for i in *fastq.gz
 do 
@@ -25,7 +26,7 @@ done | sort | uniq`
 for i in $KK
 do 
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  ../kallisto_quant.sh $i $REF $STRAND & 
+  kallisto_quant.sh $i $WDIR $REF $STRAND & 
 done
 wait
 

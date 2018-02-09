@@ -1,9 +1,11 @@
 #!/bin/bash 
 
 TAG=$1
-REFDIR=$2
-SPECIES=$3
+WDIR=$2
+REFDIR=$3
+SPECIES=$4
 CHROM=$REFDIR/Assemblies/${SPECIES}.chrom.sizes
+cd $WDIR/bams 
 
 SCALE=`samtools view $TAG.bam | wc -l | awk '{printf "%.3f\n",1000000000/$1}'`
 ## this is the scaling equivalent to TPM at every given nucleotide

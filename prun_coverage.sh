@@ -2,17 +2,18 @@
 
 ## PIPELINE VERSION
 
-cd bams
+WDIR=$1
+REFDIR=$2
+SPECIES=$3
+CPUS=$4
 
-REFDIR=$1
-SPECIES=$2
-CPUS=$3 ## how many parallel jobs to allow
+cd $WDIR/bams
 
 for i in *bam
 do
   TAG=${i%%.bam}
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  ../calculate_coverage.sh $TAG $REFDIR $SPECIES & 
+  calculate_coverage.sh $TAG $WDIR $REFDIR $SPECIES & 
 done
 wait
 

@@ -4,15 +4,17 @@
 ## archived FASTQ is assumed
 
 TAG=$1
-REFDIR=$2
-SPECIES=$3
-CPUS=$4
+WDIR=$2
+REFDIR=$3
+SPECIES=$4
+CPUS=$5
 
 READS=""
 REF=$REFDIR/bowtie2/${SPECIES}
 RRNA=$REFDIR/bowtie2/${SPECIES}.rRNA
 TRNA=$REFDIR/bowtie2/${SPECIES}.tRNA
-WDIR=`pwd`
+FQDIR=$WDIR/fastqs 
+cd $FQDIR
 
 if [[ $TAG == "" || $SPECIES == "" || $CPUS == "" ]]
 then 
@@ -23,11 +25,11 @@ fi
 if [[ -e $TAG.fastq.gz ]]
 then 
   echo "bowtie2: processing sample $TAG as single-ended."
-  READS="-U $WDIR/$TAG.fastq.gz"
+  READS="-U $FQDIR/$TAG.fastq.gz"
 elif [[ -e $TAG.R1.fastq.gz && -e $TAG.R2.fastq.gz ]]
 then
   echo "bowtie2: processing sample $TAG as paired-ended."
-  READS="-1 $WDIR/$TAG.R1.fastq.gz -2 $WDIR/$TAG.R2.fastq.gz"
+  READS="-1 $FQDIR/$TAG.R1.fastq.gz -2 $FQDIR/$TAG.R2.fastq.gz"
 else
   echo "ERROR: The reqiured fastq.gz files were not found!" 
   exit 1

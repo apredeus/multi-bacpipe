@@ -1,16 +1,17 @@
 #!/bin/bash
 
-REFDIR=$1
-SPECIES=$2
+WDIR=$1
+REFDIR=$2
+SPECIES=$3
 ANN=$REFDIR/Assemblies/${SPECIES}.3col
 
 
 ## make expression table of counts/TPM for featureCounts
-cd featureCounts
+cd $WDIR/featureCounts
 for i in *.fc.tsv
 do
   TAG=${i%%.fc.tsv}
-  ../fcount_tpm.pl $i > $TAG.fc_tpm.tsv
+  fcount_tpm.pl $i > $TAG.fc_tpm.tsv
 done 
 
 echo -e "Gene_id\tSymbol\tGene_type" > $$.names
