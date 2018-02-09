@@ -12,7 +12,7 @@ RNA-seq processing includes multiple steps, with best practices often varying be
 
 When successfully applied, this should generate:
 * genomic bam files for read-resolution visualization and analysis;
-* tdf files for visualization in IGV;
+* TDF files for visualization in IGV;
 * scaled bigWig files for visualization in JBrowse (see [doi:10.1128/mBio.01442-14](http://mbio.asm.org/content/5/4/e01442-14.full) for description of scaling); 
 * three expression tables - from [featureCounts](http://subread.sourceforge.net/), [rsem](https://deweylab.github.io/RSEM/), and [kallisto](https://pachterlab.github.io/kallisto/); 
 * a single [MultiQC](http://multiqc.info/) quality control report.
@@ -49,12 +49,13 @@ It is very much recommended to develop a system of "tags" that you would use to 
 
 After you have procured the *fasta* and the *gff3* and selected a (writeable) reference directory, simply run 
 
-`prepare_bacpipe_reference.sh <reference dir> <tag> <name>.gff3 <name>.fa`
+`prepare_bacpipe_reference.sh <reference_dir> <tag> <name>.gff <name>.fa`, or 
+`prepare_bacpipe_reference.sh <reference_dir> <tag> <name>.gff` for Prokka-style GFF file.
 
 ## One-command RNA-seq processing
 After all the references are successfully created, simply run 
 
-`run_bacpipe.sh <reference_dir> <tag> <CPUs>`
+`bacpipe.sh <reference_dir> <tag> <CPUs>`
 
 Bacpipe needs to be ran in a writeable directory with fastqs folder in it. 
 
