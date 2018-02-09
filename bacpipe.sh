@@ -25,7 +25,7 @@ echo
 echo "=================================================================================="
 echo
 
-cp ~/bacpipe/*sh .
+cp ~/bacpipe/*sh ~/bacpipe/*pl .
 
 if [[ $SPECIES == "" || $REFDIR == "" ]]
 then
@@ -66,7 +66,7 @@ echo "==========================================================================
 echo
 
 echo "["`date +%H:%M:%S`"] Step 5: Calculating strandedness and other statistics.."
-./prun_stat.sh $CPUS
+./prun_stats.sh $CPUS
 echo 
 echo "=================================================================================="
 echo

@@ -20,6 +20,6 @@ cd ../tdfs_and_bws
 mkdir logs
 mv ../bams/*tdf .
 mv ../bams/*bw .
-mv ../bams/*coverage.log logs 
+mv ../bams/*.log logs 
 
 echo "ALL COVERAGE CALCULATIONS ARE DONE!"
