@@ -15,7 +15,6 @@ else
 fi 
 
 source activate rsem
-cd $WDIR/cleaned_fastqs 
 
 KK=`for i in *fastq.gz
 do 

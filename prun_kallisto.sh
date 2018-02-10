@@ -5,7 +5,6 @@ REFDIR=$2
 SPECIES=$3
 CPUS=$4
 STRAND=$5
-cd $WDIR/cleaned_fastqs 
 
 REF=$REFDIR/kallisto/${SPECIES}_kallisto
 if [[ -e $REF ]]

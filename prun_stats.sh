@@ -4,7 +4,6 @@
 
 WDIR=$1
 
-cd $WDIR/fastqs 
 KK=`for i in *fastq.gz
 do 
   TAG1=${i%%.fastq.gz}

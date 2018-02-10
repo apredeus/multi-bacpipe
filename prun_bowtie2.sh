@@ -8,8 +8,6 @@ SPECIES=$3
 CPUS=$4
 NJOB=$((CPUS/4))
 
-cd $WDIR/fastqs
-
 KK=`for i in *fastq.gz
 do 
   TAG1=${i%%.fastq.gz}

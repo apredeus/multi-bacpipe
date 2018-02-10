@@ -7,8 +7,6 @@ REFDIR=$2
 SPECIES=$3
 CPUS=$4
 
-cd $WDIR/bams
-
 for i in *bam
 do
   TAG=${i%%.bam}

@@ -8,8 +8,6 @@ SPECIES=$3
 CPUS=$4
 STRAND=$5
 
-cd $WDIR/bams
-
 for i in *.bam 
 do 
   TAG=${i%%.bam}
@@ -21,7 +19,6 @@ wait
 
 cd ../featureCounts
 mkdir logs
-mv ../bams/*.fc.*log logs 
-mv ../bams/*.fc.*tsv . 
+mv *.fc.*log logs 
 
 echo "ALL FEATURECOUNTS QUANTIFICATION IS DONE!"

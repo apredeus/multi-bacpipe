@@ -5,8 +5,6 @@
 WDIR=$1
 CPUS=$2
 
-cd $WDIR/fastqs
-
 for i in *.fastq.gz
 do
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
