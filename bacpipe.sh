@@ -52,21 +52,21 @@ echo
 
 echo "["`date +%H:%M:%S`"] Step 1: Running FastQC.."
 cd $WDIR/fastqs 
-#prun_fastqc.sh $WDIR $CPUS
+prun_fastqc.sh $WDIR $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "["`date +%H:%M:%S`"] Step 2: Running rRNA/tRNA content evaluation and Bowtie2 alignment.."
 cd $WDIR/fastqs 
-#prun_bowtie2.sh $WDIR $REFDIR $SPECIES $CPUS
+prun_bowtie2.sh $WDIR $REFDIR $SPECIES $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files.." 
 cd $WDIR/bams 
-#prun_coverage.sh $WDIR $REFDIR $SPECIES $CPUS
+prun_coverage.sh $WDIR $REFDIR $SPECIES $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -116,14 +116,14 @@ echo
 
 echo "["`date +%H:%M:%S`"] Step 7: Running kallisto on normal and extended annotation.."
 cd $WDIR/cleaned_fastqs
-#prun_kallisto.sh $WDIR $REFDIR $SPECIES $CPUS $STRAND
+prun_kallisto.sh $WDIR $REFDIR $SPECIES $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo
 
 echo "["`date +%H:%M:%S`"] Step 8: Running RSEM on normal and extended annotation.."
 cd $WDIR/cleaned_fastqs
-#prun_rsem.sh $WDIR $REFDIR $SPECIES $CPUS $STRAND
+prun_rsem.sh $WDIR $REFDIR $SPECIES $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo
