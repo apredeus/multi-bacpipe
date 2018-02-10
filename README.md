@@ -48,8 +48,13 @@ It is very much recommended to develop a system of "tags" that you would use to 
 
 After you have procured the *fasta* and the *gff3* and selected a (writeable) reference directory, simply run 
 
-`prepare_bacpipe_reference.sh <reference_dir> <tag> <name>.gff <name>.fa`, or 
-`prepare_bacpipe_reference.sh <reference_dir> <tag> <name>.gff` for Prokka-style GFF file.
+`prepare_bacpipe_reference.sh <reference_dir> <tag> <name>.gff <name>.fa`
+
+or 
+
+`prepare_bacpipe_reference.sh <reference_dir> <tag> <name>.gff` 
+
+for Prokka-style GFF file.
 
 ## One-command RNA-seq processing
 After all the references are successfully created, simply run 
