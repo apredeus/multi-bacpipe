@@ -1,6 +1,6 @@
-# bacpipe
-A pipeline for simple and efficient processing of bacterial RNA-seq.
-<img align="right" width="281" height="330" src="https://www.soulseeds.com/wp-content/uploads/2013/10/bagpipes-joke.jpg">
+# multi-bacpipe
+A pipeline for uniform multi-strain RNA-seq processing.
+<img align="right" width="610" height="343" src="http://static.bnr.bg/sites/en/music/publishingimages/630/12-06-21-81065_2.jpg">
 
 ## Author
 [Alexander Predeus](https://www.researchgate.net/profile/Alexander_Predeus), [Jay Hinton Laboratory](http://www.hintonlab.com/), [University of Liverpool](https://www.liverpool.ac.uk/)
@@ -8,27 +8,40 @@ A pipeline for simple and efficient processing of bacterial RNA-seq.
 (c) 2018, GPL v3 license
 
 ## Motivation
-RNA-seq processing includes multiple steps, with best practices often varying between different species and laboratories. This pipeline deals with quality control, alignment, visualization, and quantification of bacterial RNA-seq experiments. 
+This is an upgrade to [bacpipe](https://github.com/apredeus/bacpipe) that is capable of performing uniform RNA-seq appropriate annotation of muliple strains and/or genomes, and then create master expression tables streamlined for a detailed strain comparison. 
 
-When successfully applied, this should generate:
+When successfully applied, this should generate (for each strain):
 * genomic bam files for read-resolution visualization and analysis;
 * TDF files for visualization in IGV;
 * scaled bigWig files for visualization in JBrowse (see [doi:10.1128/mBio.01442-14](http://mbio.asm.org/content/5/4/e01442-14.full) for description of scaling); 
-* three expression tables - from [featureCounts](http://subread.sourceforge.net/), [rsem](https://deweylab.github.io/RSEM/), and [kallisto](https://pachterlab.github.io/kallisto/); 
+* raw read and TPM expression tables - from [featureCounts](http://subread.sourceforge.net/), [rsem](https://deweylab.github.io/RSEM/), and [kallisto](https://pachterlab.github.io/kallisto/); 
 * a single [MultiQC](http://multiqc.info/) quality control report.
+
+This should also generate several master tables for all sorts of downstream analysis (clustering, PCA, differential expression, etc).
 
 ## Installation and requirements 
 Clone the pipeline scripts into your home directory and add them to $PATH variable in bash: 
 
 ```bash
 cd ~
-git clone https://github.com/apredeus/bacpipe
-echo "export ~/bacpipe:$PATH" >> .bashrc
+git clone https://github.com/apredeus/multi-bacpipe
+echo "export ~/multi-bacpipe:$PATH" >> .bashrc
 ```
 
-To install the requirements, use [Bioconda](https://bioconda.github.io/). These are the programs that need to be installed: 
+To install the requirements, use [Bioconda](https://bioconda.github.io/). Below are the programs that need to be installed. In our experience, it heps to have roary, prokka, and rsem installed in their own virtual environments. Management of virtual environments in Bioconda is described [here](https://conda.io/docs/user-guide/tasks/manage-environments.html).
 
 ```bash
+conda create -n roary 
+conda create -n prokka 
+conda create -n rsem 
+``` 
+After you've created virtual environments, install all the pre-requisites as follows:
+
+```bash 
+conda install -n roary roary 
+conda install -n prokka prokka 
+conda install -n rsem rsem
+
 conda install fastqc
 conda install bowtie2
 conda install samtools
@@ -37,6 +50,16 @@ conda install igvtools
 conda install rsem
 conda install kallisto
 conda install subread
+```
+
+You would need to clone and compile Jim Kent's utilites: 
+
+```bash 
+cd ~
+git clone https://github.com/ENCODE-DCC/kentUtils
+cd kentUtils
+make
+echo "export ~/kentUtils:$PATH" >> .bashrc
 ```
 
 You also need to have Perl installed. Sorry. 
