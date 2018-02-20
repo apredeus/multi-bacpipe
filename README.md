@@ -1,6 +1,6 @@
 # multi-bacpipe
 A pipeline for uniform multi-strain RNA-seq processing.
-<img align="right" width="610" height="343" src="http://static.bnr.bg/sites/en/music/publishingimages/630/12-06-21-81065_2.jpg">
+<img align="right" width="407" height="229" src="http://static.bnr.bg/sites/en/music/publishingimages/630/12-06-21-81065_2.jpg">
 
 ## Author
 [Alexander Predeus](https://www.researchgate.net/profile/Alexander_Predeus), [Jay Hinton Laboratory](http://www.hintonlab.com/), [University of Liverpool](https://www.liverpool.ac.uk/)
