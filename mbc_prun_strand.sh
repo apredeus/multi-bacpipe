@@ -7,14 +7,17 @@ REFDIR=$2
 SPECIES=$3
 CPUS=$4
 
-for i in *.bam 
-do 
-  TAG=${i%%.bam}
-  echo "featureCounts: processing sample $TAG, file $i.."
-  while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  strand_quant.sh $TAG $WDIR $REFDIR $SPECIES & 
-done
+N=`grep -v "^Reference" $CONFIG | wc -l`
+KK=`grep -v "^Reference" $CONFIG | cut -f 1`
+PP=`grep -v "^Reference" $CONFIG | cut -f 2`
+a=( $KK ) 
+b=( $PP ) 
 
+for i in `seq 0 $((N-1))`
+do
+  while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
+  mbc_strand_quant.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} &
+done
 wait
 
 rm *summary

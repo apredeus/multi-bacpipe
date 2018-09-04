@@ -1,40 +1,35 @@
 #!/bin/bash 
 
 REFDIR=$1
-SPECIES=$2 ## e.g. P125109_ncbi
+CONFIG=$2 ## tab-separated config file: tag to species ID 
 CPUS=$3
 WDIR=`pwd`
 
 if [[ $# != "3" ]] 
 then 
-  echo "What is the airspeed velocity of an unladen swallow?"
-  #echo "For more usage information, please see https://github.com/apredeus/bacpipe"
+  echo "Usage: multi-bacpipe.sh <ref_dir> <config> <CPUs>" 
+  echo "See github.com/apredeus/multi-bacpipe for more information."
   exit 1
 fi
+
+echo "=================================================================================="
+echo "=================================================================================="
+echo "===                                                                            ==="
+echo "===                             Welcome to BACPIPE!                            ==="
+echo "===                              PAY OR I PLAY (R)                             ==="
+echo "===  For more information, please visit https://github.com/apredeus/bacpipe    ==="
+echo "===                          Publication in preparation.                       ==="
+echo "===                                                                            ==="
+echo "=================================================================================="
+echo "=================================================================================="
+echo
+echo
 
 cd $WDIR 
 
-if [[ -d fastqs && "$(ls -A fastqs)" ]]; then
-  echo "Found non-empty directory named fastqs! Continuing."
-else
-  echo "ERROR: directory fastqs does not exist and is empty!"
-  exit 1
-fi
-
-if [[ ! -d bams || ! -d stats || ! -d strand || ! -d tdfs_and_bws || \
-! -d RSEM || ! -d featureCounts || ! -d FastQC || \
-! -d kallisto || ! -d exp_tables || ! -d cleaned_fastqs ]]
+if [[ $CONFIG == "" || $REFDIR == "" ]]
 then
-  echo "One of the required directories is missing, I will try to create them."
-  mkdir bams stats strand tdfs_and_bws RSEM exp_tables
-  mkdir featureCounts FastQC kallisto cleaned_fastqs
-else
-  echo "All the necessary directories found, continuing." 
-fi
-
-if [[ $SPECIES == "" || $REFDIR == "" ]]
-then
-  echo "ERROR: You have to specify REFDIR and SPECIES!"
+  echo "ERROR: You have to specify REFDIR and CONFIG!"
   exit 1
 fi
 
@@ -50,37 +45,45 @@ echo
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 1: Running FastQC.."
-cd $WDIR/fastqs 
-prun_fastqc.sh $WDIR $CPUS
+echo "["`date +%H:%M:%S`"] Step 0: Checking configuration file and reference availability.."
+cd $WDIR
+## add actually QUITTING on errors!
+mbc_check_config.sh $WDIR $REFDIR $CONFIG
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 2: Running rRNA/tRNA content evaluation and Bowtie2 alignment.."
+echo "["`date +%H:%M:%S`"] Step 1: Running FastQC.."
 cd $WDIR/fastqs 
-prun_bowtie2.sh $WDIR $REFDIR $SPECIES $CPUS
+mbc_prun_fastqc.sh $WDIR $CPUS
+echo 
+echo "=================================================================================="
+echo
+
+echo "["`date +%H:%M:%S`"] Step 2: Running STAR alignment.."
+cd $WDIR/fastqs 
+mbc_prun_star.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files.." 
 cd $WDIR/bams 
-prun_coverage.sh $WDIR $REFDIR $SPECIES $CPUS
+mbc_prun_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "["`date +%H:%M:%S`"] Step 4: Running featureCounts on all possible strand settings.."
 cd $WDIR/bams 
-prun_strand.sh $WDIR $REFDIR $SPECIES $CPUS
+mbc_prun_strand.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "["`date +%H:%M:%S`"] Step 5: Calculating strandedness and other statistics.."
 cd $WDIR/fastqs 
-prun_stats.sh $WDIR
+mbc_prun_stats.sh $WDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -109,28 +112,14 @@ echo
 
 echo "["`date +%H:%M:%S`"] Step 6: Running featureCounts on normal and extended annotation.."
 cd $WDIR/bams 
-prun_fcount.sh $WDIR $REFDIR $SPECIES $CPUS $STRAND
+mbc_prun_fcount.sh $WDIR $REFDIR $CONFIG $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 7: Running kallisto on normal and extended annotation.."
-cd $WDIR/cleaned_fastqs
-prun_kallisto.sh $WDIR $REFDIR $SPECIES $CPUS $STRAND
-echo 
-echo "=================================================================================="
-echo
-
-echo "["`date +%H:%M:%S`"] Step 8: Running RSEM on normal and extended annotation.."
-cd $WDIR/cleaned_fastqs
-prun_rsem.sh $WDIR $REFDIR $SPECIES $CPUS $STRAND
-echo 
-echo "=================================================================================="
-echo
-
-echo "["`date +%H:%M:%S`"] Step 9: Making final expression tables.."
+echo "["`date +%H:%M:%S`"] Step 7: Making final expression tables.."
 cd $WDIR/featureCounts 
-make_tables.sh $WDIR $REFDIR $SPECIES $CPUS
+mbc_make_tables.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
