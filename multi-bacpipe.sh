@@ -3,7 +3,6 @@
 REFDIR=$1
 CONFIG=$2 ## tab-separated config file: tag to species ID 
 CPUS=$3
-WDIR=`pwd`
 
 if [[ $# != "3" ]] 
 then 
@@ -25,8 +24,6 @@ echo "==========================================================================
 echo
 echo
 
-cd $WDIR 
-
 if [[ $CONFIG == "" || $REFDIR == "" ]]
 then
   echo "ERROR: You have to specify REFDIR and CONFIG!"
@@ -41,47 +38,58 @@ else
   echo "Parallel jobs will be ran on $CPUS cores."
 fi
 
+WDIR=`pwd`
+cd $WDIR 
+REFDIR=`readlink -f $REFDIR`
+CONFIG=`readlink -f $CONFIG`
+
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 0: Checking configuration file and reference availability.."
-cd $WDIR
+echo "==> ["`date +%H:%M:%S`"] Step 0: Checking configuration file and reference availability."
+echo 
 ## add actually QUITTING on errors!
+cd $WDIR 
 mbc_check_config.sh $WDIR $REFDIR $CONFIG
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 1: Running FastQC.."
-cd $WDIR/fastqs 
+echo "==> ["`date +%H:%M:%S`"] Step 1: Running FastQC."
+echo
+cd $WDIR/fastqs
 mbc_prun_fastqc.sh $WDIR $CPUS
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 2: Running STAR alignment.."
+echo "==> ["`date +%H:%M:%S`"] Step 2: Running STAR alignment."
+echo
 cd $WDIR/fastqs 
 mbc_prun_star.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files.." 
+echo "==> ["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files." 
+echo
 cd $WDIR/bams 
 mbc_prun_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 4: Running featureCounts on all possible strand settings.."
+echo "==> ["`date +%H:%M:%S`"] Step 4: Running featureCounts on all possible strand settings."
+echo 
 cd $WDIR/bams 
 mbc_prun_strand.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 5: Calculating strandedness and other statistics.."
+echo "==> ["`date +%H:%M:%S`"] Step 5: Calculating strandedness and other statistics."
+echo 
 cd $WDIR/fastqs 
 mbc_prun_stats.sh $WDIR $CONFIG $CPUS
 echo 
@@ -110,14 +118,16 @@ echo
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 6: Running featureCounts on normal and extended annotation.."
+echo "==> ["`date +%H:%M:%S`"] Step 6: Running featureCounts on normal and extended annotation."
+echo 
 cd $WDIR/bams 
 mbc_prun_fcount.sh $WDIR $REFDIR $CONFIG $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo
 
-echo "["`date +%H:%M:%S`"] Step 7: Making final expression tables.."
+echo "==> ["`date +%H:%M:%S`"] Step 7: Making final expression tables."
+echo 
 cd $WDIR/featureCounts 
 mbc_make_tables.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
@@ -125,4 +135,4 @@ echo "==========================================================================
 echo
 
 
-echo "["`date +%H:%M:%S`"] ALL YOUR BASE ARE BELONG TO US!!!"
+echo "==> ["`date +%H:%M:%S`"] ALL YOUR BASES ARE BELONG TO US!!!"

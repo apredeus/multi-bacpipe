@@ -11,9 +11,8 @@ CPUS=$5
 
 READS=""
 PAIRED=""
-MFLAG=""
-REF=$REFDIR/${SPECIES}/${SPECIES}_STAR
-RRNA=$REFDIR/${SPECIES}/${SPECIES}_rRNA.bed ## use whole operons here
+REF=$REFDIR/${SPECIES}/${SPECIES}.STAR
+RRNA=$REFDIR/${SPECIES}/${SPECIES}.rRNA.bed ## use whole operons here
 FQDIR=$WDIR/fastqs 
 
 if [[ $TAG == "" || $SPECIES == "" || $CPUS == "" ]]
@@ -48,7 +47,7 @@ then
   exit 1
 fi
 
-echo -e "command: STAR --genomeDir $RRNA --readFilesIn $READS --alignIntronMin 20 --alignIntronMax 19 --readFilesCommand zcat --runThreadN $CPUS --outFilterMultimapNmax 20 --outReadsUnmapped Fastx"
+echo -e "command: STAR --genomeDir $REF --readFilesIn $READS --alignIntronMin 20 --alignIntronMax 19 --readFilesCommand zcat --runThreadN $CPUS --outFilterMultimapNmax 20 --outReadsUnmapped Fastx"
 STAR --genomeDir $REF --readFilesIn $READS --alignIntronMin 20 --alignIntronMax 19 --readFilesCommand zcat --runThreadN $CPUS --outFilterMultimapNmax 20 --outSAMtype BAM Unsorted &> /dev/null 
 
 ## only take the reads that don't overlap rRNA operons 

@@ -28,7 +28,7 @@ fi
 
 if [[ ! -d bams || ! -d stats || ! -d strand || ! -d tdfs_and_bws || ! -d featureCounts || ! -d FastQC || ! -d exp_tables  ]]  
 then
-  echo "One of the required directories is missing, I will try to create them."
+  echo "One (or more) of the required directories is missing, I will try to create them."
   mkdir featureCounts FastQC bams stats strand tdfs_and_bws exp_tables
 else
   echo "All the necessary directories found, continuing." 
@@ -40,8 +40,8 @@ for i in $STR
 do
   cd $REFDIR/$i 
   echo "Inspecting used strain $i.."
-  if [[ -s $i.genes.gff && -s $i.chrom.sizes && -s $i.genome.fa && -s $i.genome.fa.fai && \
-  -s $i.rRNA.bed && -s $i.prophage.bed && "$(ls -A ${i}_STAR)" ]]
+  if [[ -s $i.gene.gff && -s $i.chrom.sizes && -s $i.genome.fa && -s $i.genome.fa.fai && \
+  -s $i.rRNA.bed && -s $i.prophage.bed && "$(ls -A ${i}.STAR)" ]]
   then
     echo "$i: all necessary annotation files exist and are not empty. Continuing."
   else 

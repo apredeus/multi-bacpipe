@@ -1,7 +1,5 @@
 #!/bin/bash 
 
-## PIPELINE VERSION
-
 WDIR=$1
 CONFIG=$2
 CPUS=$3

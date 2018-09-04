@@ -72,7 +72,7 @@ else
   N_MULT=$MULT2
   N_ASSG=`grep "Successfully assigned reads" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
   
-  echo -e "$TAG\t$N_ALL\t$N_RRNA\t$N_UNMP\t$N_MULT\t$N_UNIQ\t$N_ASSG" > $TAG.counts 
+  echo -e "$TAG\t$SPECIES\t$N_ALL\t$N_RRNA\t$N_UNMP\t$N_MULT\t$N_UNIQ\t$N_ASSG" > $TAG.counts 
   
   P_RRNA=`echo $N_ALL | awk -v v=$N_RRNA '{printf "%.3f\n",v*100/$0}'` 
   P_UNMP=`echo $N_ALL | awk -v v=$N_UNMP '{printf "%.3f\n",v*100/$0}'` 
@@ -80,7 +80,7 @@ else
   P_MULT=`echo $N_ALL | awk -v v=$N_MULT '{printf "%.3f\n",v*100/$0}'` 
   P_ASSG=`echo $N_ALL | awk -v v=$N_ASSG '{printf "%.3f\n",v*100/$0}'` 
   
-  echo -e "$TAG\t$P_RRNA\t$P_UNMP\t$P_MULT\t$P_UNIQ\t$P_ASSG" > $TAG.percent
+  echo -e "$TAG\t$SPECIES\t$P_RRNA\t$P_UNMP\t$P_MULT\t$P_UNIQ\t$P_ASSG" > $TAG.percent
    
   R0=`grep "Successfully assigned reads" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
   R1=`grep "Successfully assigned reads" $WDIR/strand/logs/$TAG.fc.s1.log | awk '{print $6}'`

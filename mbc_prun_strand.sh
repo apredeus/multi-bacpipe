@@ -4,7 +4,7 @@
 
 WDIR=$1
 REFDIR=$2
-SPECIES=$3
+CONFIG=$3
 CPUS=$4
 
 N=`grep -v "^Reference" $CONFIG | wc -l`
