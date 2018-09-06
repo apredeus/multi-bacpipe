@@ -58,32 +58,32 @@ echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 1: Running FastQC."
 echo
-cd $WDIR/fastqs
-mbc_prun_fastqc.sh $WDIR $CPUS
+#cd $WDIR/fastqs
+#mbc_prun_fastqc.sh $WDIR $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 2: Running STAR alignment."
 echo
-cd $WDIR/fastqs 
-mbc_prun_star.sh $WDIR $REFDIR $CONFIG $CPUS
+#cd $WDIR/fastqs 
+#mbc_prun_star.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files." 
 echo
-cd $WDIR/bams 
-mbc_prun_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
+#cd $WDIR/bams 
+#mbc_prun_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 4: Running featureCounts on all possible strand settings."
 echo 
-cd $WDIR/bams 
-mbc_prun_strand.sh $WDIR $REFDIR $CONFIG $CPUS
+#cd $WDIR/bams 
+#mbc_prun_strand.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -118,7 +118,7 @@ echo
 echo "=================================================================================="
 echo
 
-echo "==> ["`date +%H:%M:%S`"] Step 6: Running featureCounts on normal and extended annotation."
+echo "==> ["`date +%H:%M:%S`"] Step 6: Selecting the appropriate quantification approach."
 echo 
 cd $WDIR/bams 
 mbc_prun_fcount.sh $WDIR $REFDIR $CONFIG $CPUS $STRAND
