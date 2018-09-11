@@ -1,21 +1,109 @@
 #!/bin/bash 
 
-REFDIR=$1
-CONFIG=$2 ## tab-separated config file: tag to species ID 
-CPUS=$3
+## This is the master script for the bacterial RNA-seq processing pipeline. 
+## It reports the master log, determines if it's OK to proceed, and calls all the sub-scripts. 
+## Computationally challenging tasks are parallelized; Parallel wrappers 
+## are named mbc_prun_*.sh. These in turn call onto individual scripts. 
 
-if [[ $# != "3" ]] 
-then 
-  echo "Usage: multi-bacpipe.sh <ref_dir> <config> <CPUs>" 
-  echo "See github.com/apredeus/multi-bacpipe for more information."
+GRN='\033[1;32m'
+BL='\033[0;34m'
+NC='\033[0m' # No Color
+
+if [[ $# < 3 ]] 
+then
+  echo
+  echo "Process the data using pre-created reference."
+  echo "====================================================" 
+  printf "Usage: ${GRN}bacpipe${NC} ${BL}<ref_dir> <-m config>${NC} [-p CPUs]\n"
+  echo "       (for multi-strain experiment processing)" 
+  echo "       - or - " 
+  printf "Usage: ${GRN}bacpipe${NC} ${BL}<ref_dir> <-s strain_tag>${NC} [-p CPUs]\n" 
+  echo "       (for single strain experiment processing)"
+  echo 
+  echo "See github.com/apredeus/bacpipe for more information."
+  echo 
   exit 1
 fi
+
+CONFIG=""
+STRAIN=""
+CPUS="" 
+PARAMS=""
+
+while (( "$#" )); do
+  case "$1" in
+    -m)
+      CONFIG=$2
+      shift 2
+      if [[ $CONFIG == "" ]]
+      then
+        echo "ERROR: -m flag requires a non-empty argument (config file)!" 
+        exit 1 
+      fi
+      echo "===> Option -m activated; experiment will be processed as multi-strain, config file is $CONFIG."
+      ;;  
+    -s)
+      STRAIN=$2
+      shift 2
+      if [[ $STRAIN == "" ]]
+      then
+        echo "ERROR: -s flag requires a non-empty argument (strain tag)!" 
+        exit 1 
+      fi
+      echo "===> Invoking -s option: experiment will be processed as single-strain, strain tag is $STRAIN."
+      ;;  
+    -p)
+      CPUS=$2
+      shift 2
+      if [[ $CPUS == "" ]]
+      then
+        echo "ERROR: -p flag requires a non-empty argument (number of CPUs)!" 
+        exit 1 
+      fi
+      echo "===> Invoking -p option: parallel jobs will be run on $CPUS cores."
+      ;;  
+    --) # end argument parsing
+      shift
+      break
+      ;;  
+    -*|--*=) # unsupported flags
+      echo "Error: Unsupported flag $1" >&2
+      exit 1
+      ;;  
+    *) # preserve positional arguments
+      PARAMS="$PARAMS $1"
+      shift
+      ;;  
+  esac
+done
+eval set -- "$PARAMS"
+
+REFDIR=$1
+
+## TODO some sanity checks, dem old ones dont work no more
+
+if [[ $REFDIR == "" ]]
+then
+  echo "ERROR: Reference directory must be specified!" 
+fi  
+
+if [[ $CPUS == "" ]]
+then 
+  echo "===> Parallel jobs will be ran on 16 cores (default)."
+  CPUS=16
+fi
+
+
+############################################################
+
+set -euo pipefail
 
 echo "=================================================================================="
 echo "=================================================================================="
 echo "===                                                                            ==="
 echo "===                             Welcome to BACPIPE!                            ==="
-echo "===                              PAY OR I PLAY (R)                             ==="
+echo "===                       v0.2 - with multi-strain support                     ==="
+echo "===            2018  (c)  Alexander Predeus, Jay Hinton Lab, Liverpool         ==="
 echo "===  For more information, please visit https://github.com/apredeus/bacpipe    ==="
 echo "===                          Publication in preparation.                       ==="
 echo "===                                                                            ==="
@@ -24,19 +112,6 @@ echo "==========================================================================
 echo
 echo
 
-if [[ $CONFIG == "" || $REFDIR == "" ]]
-then
-  echo "ERROR: You have to specify REFDIR and CONFIG!"
-  exit 1
-fi
-
-if [[ $CPUS == "" ]]
-	then 
-  echo "Parallel jobs have been set to default - running on 16 cores."
-  CPUS=16
-else 
-  echo "Parallel jobs will be ran on $CPUS cores."
-fi
 
 WDIR=`pwd`
 cd $WDIR 
@@ -49,7 +124,6 @@ echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 0: Checking configuration file and reference availability."
 echo 
-## add actually QUITTING on errors!
 cd $WDIR 
 mbc_check_config.sh $WDIR $REFDIR $CONFIG
 echo 
@@ -58,32 +132,32 @@ echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 1: Running FastQC."
 echo
-#cd $WDIR/fastqs
-#mbc_prun_fastqc.sh $WDIR $CPUS
+cd $WDIR/fastqs
+mbc_prun_fastqc.sh $WDIR $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 2: Running STAR alignment."
 echo
-#cd $WDIR/fastqs 
-#mbc_prun_star.sh $WDIR $REFDIR $CONFIG $CPUS
+cd $WDIR/fastqs 
+mbc_prun_star.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files." 
 echo
-#cd $WDIR/bams 
-#mbc_prun_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
+cd $WDIR/bams 
+mbc_prun_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 4: Running featureCounts on all possible strand settings."
 echo 
-#cd $WDIR/bams 
-#mbc_prun_strand.sh $WDIR $REFDIR $CONFIG $CPUS
+cd $WDIR/bams 
+mbc_prun_strand.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -129,7 +203,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 7: Making final expression tables."
 echo 
 cd $WDIR/featureCounts 
-mbc_make_tables.sh $WDIR $REFDIR $CONFIG $CPUS
+mbc_make_tables.sh $WDIR $REFDIR $CONFIG
 echo 
 echo "=================================================================================="
 echo

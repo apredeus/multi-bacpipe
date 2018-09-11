@@ -37,9 +37,14 @@ conda install samtools
 conda install bedtools
 conda install igvtools
 conda install subread
+conda install blast 
 conda create -n prokka -c conda-forge -c bioconda prokka
 conda create -n roary  -c conda-forge -c bioconda roary
 ```
+/utils contains Linux-compiled utilities necessary for file processing: dos2unix converts Roary CSV output to Unix format, and bedGraphToBigWig is called upon when generating bigWig files. 
+
+Make sure you have added /utils to your $PATH, or made these utilities available in any other way. 
+
 You also need to have Perl installed. Sorry. 
 
 ## Setting up the working directory

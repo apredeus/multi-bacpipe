@@ -19,28 +19,20 @@ then
   PAIRED="-p" 
 fi
 
-MFLAG="-M --fraction" 
-
 cd $WDIR/featureCounts
 
-if [[ $TAG == "" || $SPECIES == "" || $REFDIR == "" ]]
-then 
-  echo "ERROR: Please provide 1) output name (tag) assuming <tag>.fastq.gz or <tag>.R1.fastq.gz/<tag>.R2.fastq.gz input; 2) species/assembly alias, e.g. genprime_v23; 3) strandedness as NONE/FR/RF"
-  exit 1
-fi
- 
 if [[ $STRAND == "NONE" ]]
 then
   SFLAG="0"
-  echo "featureCounts: processing sample $TAG, strandedness $STRAND (-s $SFLAG), PE options: $PAIRED"
+  echo "featureCounts: processing sample $TAG (strain $SPECIES), strandedness $STRAND (-s $SFLAG), PE options: $PAIRED"
 elif [[ $STRAND == "FR" ]]
 then
   SFLAG="1"
-  echo "featureCounts: processing sample $TAG, strandedness $STRAND (-s $SFLAG), PE options: $PAIRED"
+  echo "featureCounts: processing sample $TAG (strain $SPECIES), strandedness $STRAND (-s $SFLAG), PE options: $PAIRED"
 elif [[ $STRAND == "RF" ]]
 then
   SFLAG="2"
-  echo "featureCounts: processing sample $TAG, strandedness $STRAND (-s $SFLAG), PE options: $PAIRED"
+  echo "featureCounts: processing sample $TAG (strain $SPECIES), strandedness $STRAND (-s $SFLAG), PE options: $PAIRED"
 else
   echo "ERROR: you must set strand variable to either NONE, FR, or RF"
   exit

@@ -22,9 +22,8 @@ do
 done
 wait
 
-rm *summary
 cd ../featureCounts
 mkdir logs
-mv ../bams/*fc.*log logs 
+mv *log logs 
 
 echo "ALL FEATURECOUNTS QUANTIFICATION IS DONE!"

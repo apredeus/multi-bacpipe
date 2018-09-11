@@ -2,25 +2,23 @@
 
 WDIR=$1
 REFDIR=$2
-SPECIES=$3
-ANN=$REFDIR/$SPECIES/${SPECIES}.3col
+CONFIG=$3
 
-## This would need to be significantly re-written for multi-strain
+N1=`grep -v "^Reference" $CONFIG | wc -l`
+NR=`grep    "^Reference" $CONFIG | wc -l`
+NS=`grep -v "^Reference" $CONFIG | cut -f 2 | sort | uniq | wc -l` 
+KK=`grep -v "^Reference" $CONFIG | cut -f 2 | sort | uniq`
 
+cd $WDIR/featureCounts
 
 ## make expression table of counts/TPM for featureCounts
-cd $WDIR/featureCounts
 for i in *fc.tsv
 do
   TAG=${i%%.tsv}
-  bc_fcount_tpm.pl $i > $TAG.tpm.tsv
+  mbc_fcount_tpm.pl $i > $TAG.tpm.tsv
 done 
 
-echo -e "Gene_id\tSymbol\tGene_type" > $$.names
-cat $ANN | sort -k1,1 >> $$.names
-
 FC=`ls *.fc.tpm.tsv`
-
 for i in $FC
 do
   TAG=${i%%.fc.tpm.tsv}
@@ -30,8 +28,27 @@ do
   awk '{if (NR>2) print}' $i | sort -k1,1 | cut -f 8 >> $TAG.TPM.tmp 
 done
 
-paste $$.names *.counts.tmp      > ../exp_tables/featureCounts.counts.tsv  
-paste $$.names *.TPM.tmp         > ../exp_tables/featureCounts.TPM.tsv  
-rm *counts.tmp *TPM.tmp $$.names
+for i in $KK 
+do
+  echo "Making raw count and TPM tables for strain $i."
+  PP=`grep -P "\t$i" $CONFIG | cut -f 1`
+  FIRST=`echo $PP | awk '{print $1}'`
+  echo -e $i > $i.names
+  awk '{if (NR>2) print $1}' $FIRST.fc.tpm.tsv | sort -k1,1 >> $i.names
+  CNT_LIST=`echo $PP | perl -ne '@t=split/\s+/; foreach $i (@t) {print "$i.counts.tmp "}; print "\n"'`
+  TPM_LIST=`echo $PP | perl -ne '@t=split/\s+/; foreach $i (@t) {print "$i.TPM.tmp "}; print "\n"'`
+  paste $i.names $CNT_LIST > ../exp_tables/$i.counts.tsv
+  paste $i.names $TPM_LIST > ../exp_tables/$i.TPM.tsv
+done
+
+rm *.names *.counts.tmp *TPM.tmp
+
+cd $WDIR/exp_tables
+ls *.counts.tsv > Tables.list 
+
+## run a final script 
+## both CDS_orthologs.tsv and ncRNA_orthologs.tsv should be annotated with chr/plasmid/prophage
+
+unify_exp_tables.pl $WDIR/roary/CDS_orthologs.tsv $WDIR/piggy/ncRNA_orthologs.tsv Tables.list 
 
 echo "ALL EXPRESSION TABLE PROCESSING IS DONE!" 
