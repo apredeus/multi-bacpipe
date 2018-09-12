@@ -32,8 +32,8 @@ while (<CONFIG>) {
     my $fasta_index = join "",$refdir,"/",$strain,"/",$strain,".genome.fa.fai";
     my $gff = join "",$refdir,"/",$strain,"/",$strain,".CDS.gff";
     my $chr_name = `cat $fasta_index | sort -k2,2nr | head -n 1 | cut -f 1`;
+    chomp $chr_name;
     $cds_loc->{$strain}->{chr_name}=$chr_name; 
-    $cds_loc->{$strain}->{type}="study"; 
     push @study_strains,$strain; 
 
     open PROP,"<",$prophage; 
@@ -51,15 +51,15 @@ while (<CONFIG>) {
       chomp; 
       my @tt = split /\t+/; 
       $tt[8] =~ m/ID=(.*?);/; 
-      my $locus_tag = $1; 
-      my $cds_coord->{$locus_tag}->{strain}=$strain; 
-      my $cds_coord->{$locus_tag}->{chr}=$tt[0]; 
-      my $cds_coord->{$locus_tag}->{beg}=$tt[3]; 
-      my $cds_coord->{$locus_tag}->{end}=$tt[4]; 
+      my $locus_tag = $1;
+      ## all locus_tags are unique (confirmed in Roary) 
+      $cds_coord->{$locus_tag}->{chr}=$tt[0]; 
+      $cds_coord->{$locus_tag}->{beg}=$tt[3]; 
+      $cds_coord->{$locus_tag}->{end}=$tt[4]; 
     } 
     close GFF;  
-  } elsif (! defined $cds_loc->{$strain} && $_ =~ m/^Reference\t/) { 
-      $cds_loc->{$strain}->{type}="reference";
+  } elsif (! defined $cds_loc->{$strain} && $_ =~ m/^Reference\t/) {
+      $cds_loc->{$strain}->{type}="reference"; 
       push @ref_strains,$strain; 
   } 
 } 
@@ -77,27 +77,42 @@ for (my $i = 0; $i < scalar @names; $i++) {
   $cds_loc->{$names[$i]}->{index}=$i if (defined $cds_loc->{$names[$i]});
 }   
    
-## print Dumper($cds_loc);
-
-while (<ROARY>) { 
+#print Dumper($cds_loc);
+while (<ROARY>) {
   chomp; 
   my @tt = split /,/;
   foreach my $tt (@tt) { 
     $tt =~ s/"//g; 
   } 
-  my $gene_name = ($tt[1] eq "") ? $tt[0] : $tt[1]; 
-  my $output = $gene_name; 
+  my $gene_name = ($tt[1] eq "") ? $tt[0] : $tt[1];
+  my $gene_loc="chromosome";                ## chromosome, plasmid, prophage 
+  my $output = ""; 
   foreach my $strain (@study_strains) { 
     my $index = $cds_loc->{$strain}->{index};
     my $locus_tag = ($tt[$index] eq "") ? "NONE" : $tt[$index]; 
+    if ($locus_tag ne "NONE") {
+      my $chr = $cds_coord->{$locus_tag}->{chr};
+      my $beg = $cds_coord->{$locus_tag}->{beg};
+      my $end = $cds_coord->{$locus_tag}->{end};
+      print STDERR "LT is $locus_tag\n" if (! defined $chr); 
+      $gene_loc = "plasmid" if ($chr ne $cds_loc->{$strain}->{chr_name});
+      foreach my $key (keys %{$cds_loc->{$strain}}) { 
+        if ($key ne "chr_name" && $key ne "index" &&  $cds_loc->{$strain}->{$key}->{chr} eq $chr) {
+          my $prop_beg = $cds_loc->{$strain}->{$key}->{beg};
+          my $prop_end = $cds_loc->{$strain}->{$key}->{end};
+          $gene_loc = "prophage" if (($prop_beg <= $beg && $prop_end >= $beg) || ($prop_beg <= $end && $prop_end >= $end));
+        }
+      }
+    }
     $output = join "\t",$output,$locus_tag;
   }  
-  foreach my $strain (@ref_strains) { 
+  foreach my $strain (@ref_strains) {
     my $index = $cds_loc->{$strain}->{index}; 
+    #print "DEBUG1: $strain $index\n"; 
     my $locus_tag = ($tt[$index] eq "") ? "NONE" : $tt[$index]; 
     $output = join "\t",$output,$locus_tag;
   }  
-  print "$output\n"; 
+  printf "%s\t%s%s\n",$gene_name,$gene_loc,$output; 
 } 
 
 close ROARY; 
