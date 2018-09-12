@@ -79,13 +79,11 @@ while (<CONFIG>) {
   } 
 }
 
-#print Dumper($max_count); 
-print Dumper($name_count); 
-
 ## both have to be sorted alphabetically to make strain order reproducible 
+my @strains = sort { $a cmp $b } @study_strains;
 @ref_strains   = sort { $a cmp $b } @ref_strains; 
-@study_strains = sort { $a cmp $b } @study_strains;
-my @straind = push @study_strains,@ref_strains; 
+push @strains,@ref_strains;
+
 my $new_header = "ncRNA_name\tncRNA_loc";  
 
 foreach my $strain (@strains) { 
@@ -93,22 +91,22 @@ foreach my $strain (@strains) {
 } 
 print "$new_header\n"; 
 
-foreach my $name (keys %{$max_count} { 
-  for (my $i=0; $i=$max_count->{$name}-1; $i++) {
-    my $output = "$name\t"; 
-    my $nc_loc = "chromosome";                    ## default 
+foreach my $name (keys %{$max_count}) { 
+  for (my $i=0; $i < $max_count->{$name}; $i++) {
+    my $output = ""; 
+    my $gene_loc = "chromosome";                    ## default 
     foreach my $strain (@strains) {
       my $locus_tag; 
       ## check yoself before you wreck yoself
-      if (defined @{$name_count->{$strain}->{$name}->{lt}) {
-        @lt = @{$name_count->{$strain}->{$name}->{lt}}; 
+      if (defined $name_count->{$strain}->{$name}->{lt}) {
+        my @lt = @{$name_count->{$strain}->{$name}->{lt}}; 
         if (defined $lt[$i]) { 
           $locus_tag = $lt[$i]; 
         } else { 
           $locus_tag = "NONE"; 
         }  
       } else { 
-        $locus_tag = "NONE"; 
+        $locus_tag = "NONE";          ## this should also account for ref. strains 
       } 
       
       if ($locus_tag ne "NONE") {
@@ -125,7 +123,11 @@ foreach my $name (keys %{$max_count} {
             $gene_loc = "prophage" if (($prop_beg <= $beg && $prop_end >= $beg) || ($prop_beg <= $end && $prop_end >= $end));
           }
         }
+      }
+      $output = join "\t",$output,$locus_tag;
     }
-    $output = join "\t",$output,$locus_tag;
+    print "$name\t$gene_loc$output\n"; 
+  }
+}
 
 close CONFIG;  
