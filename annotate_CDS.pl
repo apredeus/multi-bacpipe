@@ -6,15 +6,17 @@
 ## 1) name (not necessarily unique), 2) loc (chr/prophage/plasmid); 
 ## 3-n) all IDs (locus tags) for N used + n reference strains. 
 
+## roary CSV file needs to be converted with dos2unix, and 
+## also have tRNA entries removed (I dont know why are they there in the first place). 
+
 use strict; 
 use warnings; 
-use Data::Dumper; 
 
-my $pres_abs = shift @ARGV; 
+my $roary_csv = shift @ARGV; 
 my $refdir = shift @ARGV; 
 my $config = shift @ARGV; 
 
-open ROARY,"<",$pres_abs or die "$!"; 
+open ROARY,"<",$roary_csv or die "$!"; 
 open CONFIG,"<",$config or die "$!"; 
 
 my $cds_loc = {}; 
@@ -70,14 +72,19 @@ while (<CONFIG>) {
 
 my $header = <ROARY>;
 chomp $header;  
-my @names = split /,/,$header; 
+my @names = split /,/,$header;
+my $new_header = "Gene_name\tGene_loc";  
 
 for (my $i = 0; $i < scalar @names; $i++) {
   $names[$i] =~ s/"//g; 
-  $cds_loc->{$names[$i]}->{index}=$i if (defined $cds_loc->{$names[$i]});
-}   
+  if (defined $cds_loc->{$names[$i]}) { 
+    $cds_loc->{$names[$i]}->{index}=$i; 
+    $new_header = join "\t",$new_header,$names[$i]; 
+  }
+}
+
+print "$new_header\n";    
    
-#print Dumper($cds_loc);
 while (<ROARY>) {
   chomp; 
   my @tt = split /,/;
@@ -108,7 +115,6 @@ while (<ROARY>) {
   }  
   foreach my $strain (@ref_strains) {
     my $index = $cds_loc->{$strain}->{index}; 
-    #print "DEBUG1: $strain $index\n"; 
     my $locus_tag = ($tt[$index] eq "") ? "NONE" : $tt[$index]; 
     $output = join "\t",$output,$locus_tag;
   }  
