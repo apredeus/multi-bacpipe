@@ -149,23 +149,24 @@ foreach my $strain (@study_strains) {
   
   my $samples = <TPMS>; 
   $samples = <COUNTS>;
+  chomp $samples;
   $samples =~ s/$strain\t//g; 
-  $counts->{$strain}->{samples}=$samples; 
-  $tpms->{$strain}->{samples}=$samples; 
+  $counts->{$strain}->{samples} = $samples; 
+  $tpms->{$strain}->{samples} = $samples; 
   
   while (<COUNTS>) { 
     chomp; 
     m/^(.*?)\t(.*)/;
     my $locus_tag = $1;
     my $count_str = $2; 
-    $counts->{$strain}->{$locus_tag}=$count_str; 
+    $counts->{$strain}->{$locus_tag} = $count_str; 
   } 
   while (<TPMS>) { 
     chomp; 
     m/^(.*?)\t(.*)/;
     my $locus_tag = $1;
     my $tpm_str = $2; 
-    $tpms->{$strain}->{$locus_tag}=$tpm_str; 
+    $tpms->{$strain}->{$locus_tag} = $tpm_str; 
   }
   
   close COUNTS; 
@@ -174,21 +175,62 @@ foreach my $strain (@study_strains) {
 
 #print Dumper($tpms);   
 
+open ALL_COUNTS,">","Master_table.counts.tsv" or die "$!";
+open   ALL_TPMS,">","Master_table.TPM.tsv"    or die "$!";
+
 ## and now, the actual table. Serously, fuck this thing sideways. 
-foreach my $name (keys %{$ann}) { 
-  my $flag = 1; 
-  my $output = join "\t",$name,$ann->{$name}->{loc};
-  foreach my $strain (@strains) { 
-    $output = join "\t",$output,$ann->{$name}->{$strain}->{lt};
-  }
-  foreach my $strain (@study_strains) { 
-    my $locus_tag = $ann->{$name}->{$strain}->{lt}; 
-    my $counts = $counts->{$strain}->{$locus_tag}; 
-    $output = join "\t",$output,$counts; 
-    #my $tpms = $tpms->{$strain}->{$locus_tag}; 
-  } 
-  print "$output\n"; 
+my $print_header = "Gene_name\tLocation"; 
+foreach my $strain (@strains) { 
+  $print_header = join "\t",$print_header,$strain;
 }
+foreach my $strain (@study_strains) { 
+  ## @study_strains and @ref_strains are always Unix-sorted
+  $print_header = join "\t",$print_header,$counts->{$strain}->{samples};  
+}
+
+print ALL_COUNTS "$print_header\n";
+print ALL_TPMS   "$print_header\n";
+
+my @names = keys %{$ann}; 
+@names   = sort { $a cmp $b } @names;
+
+foreach my $name (@names) { 
+  ## flag defines if this gene is present in either of @study_strains
+  ## genes absent in every study strain are not to be printed
+  my $flag = 0;
+                                         
+  my $cnt_output = join "\t",$name,$ann->{$name}->{loc};
+  foreach my $strain (@strains) { 
+    $cnt_output = join "\t",$cnt_output,$ann->{$name}->{$strain}->{lt};
+  }
+  my $tpm_output = $cnt_output; 
+ 
+  foreach my $strain (@study_strains) {
+    my $counts_str = 0;
+    my $tpm_str   = 0.000;  
+    my $locus_tag = $ann->{$name}->{$strain}->{lt};
+    if ($locus_tag ne "NONE") { 
+      $flag       = 1;  
+      $counts_str = $counts->{$strain}->{$locus_tag}; 
+      $tpm_str    = $tpms->{$strain}->{$locus_tag}; 
+      $cnt_output = join "\t",$cnt_output,$counts_str;
+      $tpm_output = join "\t",$tpm_output,$tpm_str;
+    } else {
+      ## generate a string of appropriate number of zeroes (counts) or 0.0 for TPMs 
+      for (my $j=0; $j < $sample_counts->{$strain} - 1; $j++ ) {
+        $counts_str = join "\t",$counts_str,"0";
+        $tpm_str    = join "\t",$tpm_str,"0.000";  
+      } 
+      $cnt_output = join "\t",$cnt_output,$counts_str;
+      $tpm_output = join "\t",$tpm_output,$tpm_str;
+    }  
+  } 
+  print ALL_COUNTS "$cnt_output\n" if ($flag);
+  print ALL_TPMS   "$tpm_output\n" if ($flag);
+}
+
+close ALL_COUNTS; 
+close ALL_TPMS; 
 
 close CONFIG; 
 close ANN_CDS; 
