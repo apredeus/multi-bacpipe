@@ -5,12 +5,12 @@ use warnings;
 use Data::Dumper; 
 
 ## take annotated tables of CDS and ncRNA 
-## and expression tables of all individual strains 
-## and get the master expression table 
+## and expression tables of all individual strains (in exp_tables)  
+## and get the master expression table in counts and TPMs 
 ## gene names that have a non - group_* name with underscore (e.g. argC_1) 
 ## are stripped or the _* part 
 ## non-unique genes are then assigned new unique numbers (e.g. 2 x argC becomes argC_1, argC_2)
-## group_* genes are replaced with STM* whenever possible. 
+## group_* genes are replaced with reference strain locus tags (eg STM for Salmonella) whenever possible. 
 
 
 my $wdir = shift @ARGV; 
@@ -69,6 +69,7 @@ die "ERROR: CDS and ncRNA annotations have different strain order!\n" if ($cds_h
 ## get the column numbers 
 for (my $i=0; $i < scalar @str_names; $i++) { 
   foreach my $strain (@strains) {
+    ## -2 accounts for two shifts, see below 
     $strain_idx->{$strain} = $i-2 if ($str_names[$i] eq $strain);
   }
 } 
@@ -78,59 +79,64 @@ for (my $i=0; $i < scalar @str_names; $i++) {
 ## populate annotation hash 
 while (<ANN_CDS>) { 
   chomp;
-  my $name_count = 2;  
   my @tt   = split /\t+/;
   my $name = shift @tt; 
   my $loc  = shift @tt;
   my $ref_idx = $strain_idx->{$ref_strain};
-  #print "DEBUG1: $ref_strain $ref_idx\n";  
   my $ref_lt = $tt[$ref_idx]; 
   
-  $name =~ s/_*//g if ($name !~ m/^group_/);
+  $name =~ s/_.*//g if ($name !~ m/^group_/);
   $name = $ref_lt if ($name =~ m/^group_/ && $ref_lt ne "NONE"); 
   
   if (! defined $ann->{$name}) { 
+    $ann->{$name}->{count} = 1;                       ## how many times have we seen this name 
+    
     foreach my $strain (@strains) { 
       my $idx = $strain_idx->{$strain}; 
-      my $locus_tag = $tt[$idx];                    ## account for two shifts above  
+      my $locus_tag = $tt[$idx];
       $ann->{$name}->{$strain}->{lt} = $locus_tag;
       $ann->{$name}->{loc} = $loc;                    ## chr/prophage/plasmid  
     } 
-  } else { 
-    $name = join "_",$name,$name_count; 
-    $name_count++; 
+  } else {
+    my $name_count = $ann->{$name}->{count} + 1; 
+    my $app_name = join "_",$name,$name_count;        ## if name is trpA, app_name would be trpA_2, trpA_3 etc
+    $ann->{$name}->{count}++; 
+    
     foreach my $strain (@strains) {
       my $idx = $strain_idx->{$strain};
-      my $locus_tag = $tt[$idx];                    ## account for two shifts above  
-      $ann->{$name}->{$strain}->{lt} = $locus_tag;
-      $ann->{$name}->{loc} = $loc;                    ## chr/prophage/plasmid  
+      my $locus_tag = $tt[$idx];
+      $ann->{$app_name}->{$strain}->{lt} = $locus_tag;
+      $ann->{$app_name}->{loc} = $loc;                    ## chr/prophage/plasmid  
     }
   }
 }
 
 while (<ANN_NC>) { 
   chomp;
-  my $name_count = 2;  
   my @tt   = split /\t+/;
   my $name = shift @tt; 
   my $loc  = shift @tt;
-  $name    =~ s/_*//g if ($name !~ m/^group_/); 
+  $name    =~ s/_.*//g if ($name !~ m/^group_/); 
   
   if (! defined $ann->{$name}) { 
+    $ann->{$name}->{count} = 1;                     ## how many times have we seen this name 
+    
     foreach my $strain (@strains) { 
       my $idx = $strain_idx->{$strain}; 
       my $locus_tag = $tt[$idx];                    ## account for two shifts above  
       $ann->{$name}->{$strain}->{lt} = $locus_tag;
       $ann->{$name}->{loc} = $loc;                  ## chr/prophage/plasmid  
     } 
-  } else { 
-    $name = join "_",$name,$name_count; 
-    $name_count++; 
+  } else {
+    my $name_count = $ann->{$name}->{count} + 1; 
+    my $app_name = join "_",$name,$name_count;      ## if name is trpA, app_name would be trpA_2, trpA_3 etc
+    $ann->{$name}->{count}++; 
+    
     foreach my $strain (@strains) {
       my $idx = $strain_idx->{$strain};
       my $locus_tag = $tt[$idx];                    ## account for two shifts above  
-      $ann->{$name}->{$strain}->{lt} = $locus_tag;
-      $ann->{$name}->{loc} = $loc;                  ## chr/prophage/plasmid  
+      $ann->{$app_name}->{$strain}->{lt} = $locus_tag;
+      $ann->{$app_name}->{loc} = $loc;                  ## chr/prophage/plasmid  
     }
   }
 }

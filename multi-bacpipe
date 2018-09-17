@@ -6,52 +6,54 @@
 ## are named mbc_prun_*.sh. These in turn call onto individual scripts. 
 
 GRN='\033[1;32m'
-BL='\033[0;34m'
+GRN2='\033[0;32m'
+UL='\033[4;34m'
 NC='\033[0m' # No Color
 
 if [[ $# < 3 ]] 
 then
   echo
-  echo "Process the data using pre-created reference."
-  echo "====================================================" 
-  printf "Usage: ${GRN}bacpipe${NC} ${BL}<ref_dir> <-m config>${NC} [-p CPUs]\n"
-  echo "       (for multi-strain experiment processing)" 
-  echo "       - or - " 
-  printf "Usage: ${GRN}bacpipe${NC} ${BL}<ref_dir> <-s strain_tag>${NC} [-p CPUs]\n" 
-  echo "       (for single strain experiment processing)"
+  echo "Version:"
+  echo "  v.0.2.1, Alexander Predeus (predeus@gmail.com), 2018" 
+  echo "Synopsis:"
+  echo "  Process multistrain bacterial RNA-seq data using pre-created reference"
+  echo "Usage:" 
+  printf "  ${GRN}multi-bacpipe${NC}  ${GRN2}<ref_dir>  <config>  [-p CPUs]${NC}\n"
   echo 
-  echo "See github.com/apredeus/bacpipe for more information."
+  echo "Positional arguments:"
+  echo "  <ref_dir>      Directory with all the refence sub-directories"
+  echo "  <config>       Tab-separated file listing each sample and strain tag," 
+  echo "                 as well as reference strain tags" 
+  echo "Options:"
+  echo "  -p [X]         Number of cores for parallel execution (default '16')"
+  echo  
+  printf "See ${UL}github.com/apredeus/multi-bacpipe${NC} for more information.\n"
   echo 
   exit 1
 fi
 
+## TODO: add options for a reference strain
+
+echo "=================================================================================="
+echo "=================================================================================="
+echo "===                                                                            ==="
+echo "===                             Welcome to BACPIPE!                            ==="
+echo "===                       v0.2 - with multi-strain support                     ==="
+echo "===            2018  (c)  Alexander Predeus, Jay Hinton Lab, Liverpool         ==="
+echo "===  For more information, please visit https://github.com/apredeus/bacpipe    ==="
+echo "===                          Publication in preparation.                       ==="
+echo "===                                                                            ==="
+echo "=================================================================================="
+echo "=================================================================================="
+echo
+echo
+
 CONFIG=""
-STRAIN=""
 CPUS="" 
 PARAMS=""
 
 while (( "$#" )); do
   case "$1" in
-    -m)
-      CONFIG=$2
-      shift 2
-      if [[ $CONFIG == "" ]]
-      then
-        echo "ERROR: -m flag requires a non-empty argument (config file)!" 
-        exit 1 
-      fi
-      echo "===> Option -m activated; experiment will be processed as multi-strain, config file is $CONFIG."
-      ;;  
-    -s)
-      STRAIN=$2
-      shift 2
-      if [[ $STRAIN == "" ]]
-      then
-        echo "ERROR: -s flag requires a non-empty argument (strain tag)!" 
-        exit 1 
-      fi
-      echo "===> Invoking -s option: experiment will be processed as single-strain, strain tag is $STRAIN."
-      ;;  
     -p)
       CPUS=$2
       shift 2
@@ -60,7 +62,7 @@ while (( "$#" )); do
         echo "ERROR: -p flag requires a non-empty argument (number of CPUs)!" 
         exit 1 
       fi
-      echo "===> Invoking -p option: parallel jobs will be run on $CPUS cores."
+      echo "==> Invoking -p option: parallel jobs will be run on $CPUS cores."
       ;;  
     --) # end argument parsing
       shift
@@ -79,39 +81,23 @@ done
 eval set -- "$PARAMS"
 
 REFDIR=$1
+CONFIG=$2
 
-## TODO some sanity checks, dem old ones dont work no more
-
-if [[ $REFDIR == "" ]]
+if [[ $REFDIR == "" || $CONFIG == "" || ! -d $REFDIR || ! "$(ls -A $REFDIR)" ]]
 then
-  echo "ERROR: Reference directory must be specified!" 
+  echo "ERROR: You must specify a non-empty reference directory and config file!"
+  exit 1  
 fi  
 
 if [[ $CPUS == "" ]]
 then 
-  echo "===> Parallel jobs will be ran on 16 cores (default)."
+  echo "==> Parallel jobs will be ran on 16 cores (default)."
   CPUS=16
 fi
-
 
 ############################################################
 
 set -euo pipefail
-
-echo "=================================================================================="
-echo "=================================================================================="
-echo "===                                                                            ==="
-echo "===                             Welcome to BACPIPE!                            ==="
-echo "===                       v0.2 - with multi-strain support                     ==="
-echo "===            2018  (c)  Alexander Predeus, Jay Hinton Lab, Liverpool         ==="
-echo "===  For more information, please visit https://github.com/apredeus/bacpipe    ==="
-echo "===                          Publication in preparation.                       ==="
-echo "===                                                                            ==="
-echo "=================================================================================="
-echo "=================================================================================="
-echo
-echo
-
 
 WDIR=`pwd`
 cd $WDIR 
@@ -208,5 +194,6 @@ echo
 echo "=================================================================================="
 echo
 
+## TODO: multiQC with appropriately formatted json!
 
 echo "==> ["`date +%H:%M:%S`"] ALL YOUR BASES ARE BELONG TO US!!!"

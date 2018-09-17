@@ -3,7 +3,8 @@
 ## script for parsing Roary CDS orthology output
 ## and for combining it with prophage information 
 ## we aim to make the final table that would include 
-## 1) name (not necessarily unique), 2) loc (chr/prophage/plasmid); 
+## 1) unique name (disambiguated with _*, e.g. citA/citA_2/citA_3 etc,
+## 2) location (chromosome/prophage/plasmid),
 ## 3-n) all IDs (locus tags) for N used + n reference strains. 
 
 ## roary CSV file needs to be converted with dos2unix, and 
@@ -25,8 +26,8 @@ my @ref_strains;
 my @study_strains; 
 
 while (<CONFIG>) { 
-  ## define prophage ranges for every strain
-  ## also, define what is the chromosome 
+  ## define prophage ranges for every study strain
+  ## also, define chromosome name for each strain
   chomp; 
   my $strain = (split /\t+/)[1];
   if (! defined $cds_loc->{$strain} && $_ !~ m/^Reference\t/) { 
@@ -101,7 +102,7 @@ while (<ROARY>) {
       my $chr = $cds_coord->{$locus_tag}->{chr};
       my $beg = $cds_coord->{$locus_tag}->{beg};
       my $end = $cds_coord->{$locus_tag}->{end};
-      print STDERR "LT is $locus_tag\n" if (! defined $chr); 
+      ## print STDERR "LT is $locus_tag\n" if (! defined $chr); 
       $gene_loc = "plasmid" if ($chr ne $cds_loc->{$strain}->{chr_name});
       foreach my $key (keys %{$cds_loc->{$strain}}) { 
         if ($key ne "chr_name" && $key ne "index" &&  $cds_loc->{$strain}->{$key}->{chr} eq $chr) {

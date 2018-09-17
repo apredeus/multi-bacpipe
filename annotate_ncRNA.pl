@@ -81,7 +81,7 @@ while (<CONFIG>) {
 
 ## both have to be sorted alphabetically to make strain order reproducible 
 my @strains = sort { $a cmp $b } @study_strains;
-@ref_strains   = sort { $a cmp $b } @ref_strains; 
+@ref_strains = sort { $a cmp $b } @ref_strains; 
 push @strains,@ref_strains;
 
 my $new_header = "ncRNA_name\tncRNA_loc";  

@@ -38,7 +38,7 @@ while (( "$#" )); do
         echo "ERROR: -r flag requires a non-empty argument (reference ncRNA fasta file)!" 
         exit 1 
       fi
-      echo "===> Invoking -r option: annotation of ncRNA by blasting the reference ncRNA fasta to genome."
+      echo "==> Invoking -r option: annotation of ncRNA by blasting the reference ncRNA fasta to genome."
       echo "Make sure sequence names are set correctly in $NC_REF."
       ;;  
     -p|--cpus)
@@ -49,7 +49,7 @@ while (( "$#" )); do
         echo "ERROR: -p flag requires a non-empty argument (number of CPUs)!" 
         exit 1 
       fi
-      echo "===> Invoking -p option: parallel jobs will be run on $CPUS cores."
+      echo "==> Invoking -p option: parallel jobs will be run on $CPUS cores."
       ;;  
     --) # end argument parsing
       shift
@@ -80,7 +80,7 @@ mkdir $REFDIR/$TAG
 
 if [[ $CPUS == "" ]]
   then 
-  echo "===> Parallel jobs will be ran on 16 cores (default)."
+  echo "==> Parallel jobs will be ran on 16 cores (default)."
   CPUS=16
 fi
 
