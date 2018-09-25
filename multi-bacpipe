@@ -18,7 +18,7 @@ then
   echo "Synopsis:"
   echo "  Process multistrain bacterial RNA-seq data using pre-created reference"
   echo "Usage:" 
-  printf "  ${GRN}multi-bacpipe${NC}  ${GRN2}<ref_dir>  <config>  [-p CPUs]${NC}\n"
+  printf "  ${GRN}multi-bacpipe${NC} ${GRN2}<ref_dir> <config> [-p CPUs] [-r ref_strain]${NC}\n"
   echo 
   echo "Positional arguments:"
   echo "  <ref_dir>      Directory with all the refence sub-directories"
@@ -26,13 +26,12 @@ then
   echo "                 as well as reference strain tags" 
   echo "Options:"
   echo "  -p [X]         Number of cores for parallel execution (default '16')"
+  echo "  -r [X]         Reference strain: use strain's locus tag when no gene name is assigned"
   echo  
   printf "See ${UL}github.com/apredeus/multi-bacpipe${NC} for more information.\n"
   echo 
   exit 1
 fi
-
-## TODO: add options for a reference strain
 
 echo "=================================================================================="
 echo "=================================================================================="
@@ -49,11 +48,24 @@ echo
 echo
 
 CONFIG=""
-CPUS="" 
+CPUS=""
+REFSTR="" 
 PARAMS=""
+
+
 
 while (( "$#" )); do
   case "$1" in
+    -r)
+      REFSTR=$2
+      shift 2
+      if [[ $REFSTR == "" ]]
+      then
+        echo "ERROR: -r flag requires a non-empty argument (number of CPUs)!" 
+        exit 1 
+      fi
+      echo "==> Invoking -r option: locus tags from reference strain $REFSTR will be used when common names are absent."
+      ;;  
     -p)
       CPUS=$2
       shift 2
@@ -189,7 +201,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 7: Making final expression tables."
 echo 
 cd $WDIR/featureCounts 
-mbc_make_tables.sh $WDIR $REFDIR $CONFIG
+mbc_make_tables.sh $WDIR $CONFIG $REFSTR
 echo 
 echo "=================================================================================="
 echo

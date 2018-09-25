@@ -1,5 +1,7 @@
 #!/usr/bin/env perl 
 
+## TODO: make sure works correctly without the reference strain
+
 use strict; 
 use warnings; 
 use Data::Dumper; 
@@ -17,7 +19,7 @@ my $wdir = shift @ARGV;
 my $config = shift @ARGV; 
 my $ann_cds = shift @ARGV; 
 my $ann_nc = shift @ARGV;
-my $ref_strain = shift @ARGV;  
+my $refstr = shift @ARGV;  
 
 my $sample_counts = {};
 my $strain_idx = {};  
@@ -82,7 +84,7 @@ while (<ANN_CDS>) {
   my @tt   = split /\t+/;
   my $name = shift @tt; 
   my $loc  = shift @tt;
-  my $ref_idx = $strain_idx->{$ref_strain};
+  my $ref_idx = $strain_idx->{$refstr};
   my $ref_lt = $tt[$ref_idx]; 
   
   $name =~ s/_.*//g if ($name !~ m/^group_/);

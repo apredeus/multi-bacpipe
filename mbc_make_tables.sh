@@ -1,8 +1,8 @@
 #!/bin/bash
 
 WDIR=$1
-REFDIR=$2
-CONFIG=$3
+CONFIG=$2
+REFSTR=$3
 
 N1=`grep -v "^Reference" $CONFIG | wc -l`
 NR=`grep    "^Reference" $CONFIG | wc -l`
@@ -49,6 +49,6 @@ ls *.counts.tsv > Tables.list
 ## run a final script 
 ## both CDS_orthologs.tsv and ncRNA_orthologs.tsv should be annotated with chr/plasmid/prophage
 
-unify_exp_tables.pl $WDIR/roary/CDS_orthologs.tsv $WDIR/piggy/ncRNA_orthologs.tsv Tables.list 
+unify_exp_tables.pl $WDIR $CONFIG $WDIR/roary/CDS_orthologs.tsv $WDIR/piggy/ncRNA_orthologs.tsv $REFSTR
 
 echo "ALL EXPRESSION TABLE PROCESSING IS DONE!" 
