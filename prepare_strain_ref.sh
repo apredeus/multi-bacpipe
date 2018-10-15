@@ -7,18 +7,20 @@
 ## next snippet is adapted from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
 
 GRN='\033[1;32m'
+GRN2='\033[0;32m'
+RED='\033[1;31m'
 BL='\033[0;34m'
 NC='\033[0m' # No Color
 
-if [[ $# < 3 ]]
+if [[ $# < 5 ]]
 then
   echo 
-  echo "Step 1 of reference preparation: prepare reference for a SINGLE strain."
-  echo "======================================================================="
-  printf "Usage: ${GRN}prepare_strain_ref.sh${NC} ${BL}<ref_directory> <strain_tag> <genome_fa>${NC} [-p CPUs]\n"
+  printf "Step 1 of reference preparation: prepare reference for a single ${RED}study${NC} strain.\n"
+  echo "============================================================================="
+  printf "Usage: ${GRN}prepare_strain_ref.sh ${GRN2}<ref_directory> <strain_tag> <genome_fa> <prophage_bed> <rRNA_bed> [-p CPUs]${NC}\n"
   echo "       (to predict ncRNAs using Prokka's Rfam DB)"
   echo "       - or - " 
-  printf "       ${GRN}prepare_strain_ref.sh${NC} ${BL}<ref_directory> <strain_tag> <genome_fa>${NC} [-p CPUs] [-r ref_ncRNA.fa]\n"
+  printf "       ${GRN}prepare_strain_ref.sh ${GRN2}<ref_directory> <strain_tag> <genome_fa> <prophage_bed> <rRNA_bed> [-p CPUs] [-r ref_ncRNA_fasta]${NC}\n"
   echo "       (to assign ncRNAs by simply blasting the existing reference ncRNA fasta to the genome)"
   echo 
   exit 1
@@ -39,7 +41,10 @@ while (( "$#" )); do
         exit 1 
       fi
       echo "==> Invoking -r option: annotation of ncRNA by blasting the reference ncRNA fasta to genome."
-      echo "Make sure sequence names are set correctly in $NC_REF."
+      echo 
+      printf "${RED}If you are using a custom-made ncRNA fasta file, please make sure sequence names are correct.${NC}\n"
+      printf "${RED}They will be used as ncRNA gene names in the GTF file and the final expression table.${NC}\n"
+      echo 
       ;;  
     -p|--cpus)
       CPUS=$2
@@ -70,13 +75,17 @@ eval set -- "$PARAMS"
 REFDIR=$1
 TAG=$2
 FA=$3
+PROPHAGE=$4
+RRNA=$5
 
 if [[ -d "$REFDIR/$TAG" ]]
 then
-  echo "Found $REFDIR/$TAG! Going to remove it in order to prevent possible version conflicts." 
-  rm -rf $REFDIR/$TAG
+  echo "Found $REFDIR/$TAG! Will add files to the existing directory."
+  rm -rf $REFDIR/$TAG/*.STAR $REFDIR/$TAG/*.prokka 
+else 
+  echo "Directory $REFDIR/$TAG was not found and will be created." 
+  mkdir $REFDIR/$TAG
 fi
-mkdir $REFDIR/$TAG
 
 if [[ $CPUS == "" ]]
   then 
@@ -107,7 +116,7 @@ then
   N_CDS=`grep -c -P "\tCDS\t" $TAG.CDS.gff`
   N_NCR=`grep -c -P "\tncRNA\t" $TAG.ncRNA.gff`
   echo
-  echo "===> Found $N_CDS protein-coding (CDS) and $N_NCR non-coding RNA (misc_RNA/ncRNA) features."
+  echo "==> Found $N_CDS protein-coding (CDS) and $N_NCR non-coding RNA (misc_RNA/ncRNA) features."
   echo 
 else 
   ## Make sure you have correct ncRNA names in the reference fasta - they will be used as a Name in GFF. 
@@ -123,7 +132,7 @@ else
   N_CDS=`grep -c -P "\tCDS\t" $TAG.CDS.gff`
   N_NCR=`wc -l $TAG.ncRNA.gff | awk '{print $1}'`
   echo
-  echo "===> Found $N_CDS protein-coding (CDS) and $N_NCR non-coding RNA (misc_RNA/ncRNA) features."
+  echo "==> Found $N_CDS protein-coding (CDS) and $N_NCR non-coding RNA (misc_RNA/ncRNA) features."
   echo
   rm ${TAG}_blast.n* $TAG.ncRNA_blast.out
 fi 
@@ -142,6 +151,8 @@ mv Log.out $TAG.star.log
 mv $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $REFDIR/$TAG
 mv $TAG.gene.gff $TAG.CDS.gff $TAG.ncRNA.gff $REFDIR/$TAG
 mv $TAG.prokka ${TAG}.STAR $TAG.star.log $REFDIR/$TAG
+cp $PROPHAGE $REFDIR/$TAG/$TAG.prophage.bed
+cp $RRNA     $REFDIR/$TAG/$TAG.rRNA.bed 
 
 echo "All the generated files and indexes have been moved to $REFDIR/$TAG."
 echo "Strain $TAG: all done generating reference!" 

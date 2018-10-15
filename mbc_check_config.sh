@@ -39,7 +39,7 @@ STR=`grep -v "^Reference" $CONFIG | cut -f 2 | sort | uniq`
 for i in $STR
 do
   cd $REFDIR/$i 
-  echo "Inspecting used strain $i.."
+  echo "Inspecting study strain $i.."
   if [[ -s $i.gene.gff && -s $i.chrom.sizes && -s $i.genome.fa && -s $i.genome.fa.fai && \
   -s $i.rRNA.bed && -s $i.prophage.bed && "$(ls -A ${i}.STAR)" ]]
   then
