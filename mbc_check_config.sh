@@ -1,8 +1,6 @@
 #!/bin/bash 
 
 WDIR=$1
-REFDIR=$2
-CONFIG=$3
 
 ## this is where we shall check 
 ## - if fastq exists and is non-empty; 
@@ -13,16 +11,23 @@ CONFIG=$3
 cd $WDIR
 
 if [[ -d fastqs && "$(ls -A fastqs)" ]]; then
-  echo "Found non-empty directory named fastqs! Continuing."
+  echo "==> Found non-empty directory named fastqs! Continuing."
 else
   echo "ERROR: directory fastqs does not exist or is empty!"
   exit 1
 fi
 
 if [[ -d roary && "$(ls -A roary)" ]]; then ## add extra checks for properly parsed Roary output 
-  echo "Found non-empty directory named roary! Continuing."
+  echo "==> Found non-empty directory named roary! Continuing."
 else
   echo "ERROR: directory roary does not exist or is empty! Please make sure you've ran \"prepare_multiref.sh\" on your config file."
+  exit 1
+fi
+
+if [[ -d refstr && "$(ls -A refstr)" ]]; then
+  echo "==> Found non-empty directory named refstr! Continuing."
+else
+  echo "ERROR: directory fastqs does not exist or is empty!"
   exit 1
 fi
 
@@ -33,19 +38,3 @@ then
 else
   echo "All the necessary directories found, continuing." 
 fi
-
-## 
-STR=`grep -v "^Reference" $CONFIG | cut -f 2 | sort | uniq`
-for i in $STR
-do
-  cd $REFDIR/$i 
-  echo "Inspecting study strain $i.."
-  if [[ -s $i.gene.gff && -s $i.chrom.sizes && -s $i.genome.fa && -s $i.genome.fa.fai && \
-  -s $i.rRNA.bed && -s $i.prophage.bed && "$(ls -A ${i}.STAR)" ]]
-  then
-    echo "$i: all necessary annotation files exist and are not empty. Continuing."
-  else 
-    echo "ERROR: some of the necessary annotation files for $i do not exist or are empty!"
-    exit 1
-  fi
-done 

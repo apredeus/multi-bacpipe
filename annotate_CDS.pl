@@ -102,7 +102,7 @@ while (<ROARY>) {
       my $chr = $cds_coord->{$locus_tag}->{chr};
       my $beg = $cds_coord->{$locus_tag}->{beg};
       my $end = $cds_coord->{$locus_tag}->{end};
-      ## print STDERR "LT is $locus_tag\n" if (! defined $chr); 
+      print STDERR "LT is $locus_tag\n" if (! defined $chr); 
       $gene_loc = "plasmid" if ($chr ne $cds_loc->{$strain}->{chr_name});
       foreach my $key (keys %{$cds_loc->{$strain}}) { 
         if ($key ne "chr_name" && $key ne "index" &&  $cds_loc->{$strain}->{$key}->{chr} eq $chr) {

@@ -44,11 +44,10 @@ done
 rm *.names *.counts.tmp *TPM.tmp
 
 cd $WDIR/exp_tables
-ls *.counts.tsv > Tables.list 
 
 ## run a final script 
 ## both CDS_orthologs.tsv and ncRNA_orthologs.tsv should be annotated with chr/plasmid/prophage
 
-unify_exp_tables.pl $WDIR $CONFIG $WDIR/roary/CDS_orthologs.tsv $WDIR/piggy/ncRNA_orthologs.tsv $REFSTR
+unify_exp_tables.pl $WDIR $CONFIG $WDIR/refstr/annotated_CDS.tsv $WDIR/refstr/annotated_ncRNA.tsv $REFSTR
 
 echo "ALL EXPRESSION TABLE PROCESSING IS DONE!" 
