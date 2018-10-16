@@ -39,9 +39,9 @@ conda install blast
 conda create -n prokka -c conda-forge -c bioconda prokka
 conda create -n roary  -c bioconda roary
 ```
-/utils contains Linux-compiled utilities necessary for file processing: dos2unix converts Roary CSV output to Unix format, and bedGraphToBigWig is called upon when generating bigWig files. 
+**/utils** contains Linux-compiled utilities necessary for file processing: [dos2unix](https://linux.die.net/man/1/dos2unix) converts Roary CSV output to Unix format, and [bedGraphToBigWig](https://github.com/ENCODE-DCC/kentUtils) is called upon when generating bigWig files. 
 
-Make sure you have added /utils to your $PATH, or made these utilities available in any other way. Provided binaries should work on any 64-bit Unix machine. 
+Make sure you have added **/utils** to your $PATH, or made these utilities available in any other way. Provided binaries should work on any 64-bit Unix machine. 
 
 You also need to have Perl installed. Sorry. 
 
@@ -62,7 +62,8 @@ We use the following terms during the multi-strain RNA-seq analysis:
 * **key strain** - one of reference strains which locus tags could be used instead of gene names, e.g. LT2 for *Salmonella enterica* serovar Typhimurium, or MG1655 for *Escherichia coli*;
 * **working directory** - a directory where analysis is done; any writeable directory with enough space; 
 * **reference directory** - a directory where all reference files are stored; 
-* **strain tag** - an unique identifier describing a study or a reference strain. 
+* **strain tag** - an unique identifier describing a study or a reference strain; 
+* **Roary-friendly GFF** - GFF file formatted accordingly to criteria listed below, in [Reference strain requirements](#Reference strain requirements).
 
 ## Configuration file
 Multi-strain processing is relying onto single-strain processing principles, described in [Bacpipe README](https://github.com/apredeus/bacpipe). In order to process multiple strains, you would need to make a simple tab-separated configuration file. The file should contain one tab-separated sample ID - strain ID pair per line. It should also include all of the strains that you want to use as a reference: 
@@ -82,14 +83,13 @@ See details on reference preparation below.
 ## Reference strain requirements 
 For each reference strain, you need to have a Roary-style GFF file placed into **refstr** subdirectory in your working directory. Expected name format is <tag>.roary.gff. Each file needs to satisfy the following criteria: 
 
-* File consists of three parts, similar to Prokka output: 
-** Tab-separated GTF annotation;
-** ##FASTA delimiter; 
-** strain's genomic fasta.
-* Only coding sequence features (CDS) are present; 
+* File consists of three parts, similar to Prokka output: 1) tab-separated GTF annotation; 2) ##FASTA delimiter; 3) strain's genomic fasta.
+* Only coding sequence features (*CDS*) are present - no *gene*, *sequence_feature*, etc.; 
 * Each coding seqeunce is annotated with a **unique** ID - locus tag for this strain; 
 * If there's a common name for a gene associated with this CDS, it's given in Name= field; 
 * If there is no common name reported, no Name is given. 
+
+I provide a script called **ncbi_to_roary.pl** that converts NCBI-style genomic GFF and FNA (nucleotide FASTA) into required Roary GFF *most of the time*. Few NCBI annotations, like CT18, are truly horrific and require manual parsing, if you insist on using them. 
 
 ## Two-step reference preparation
 Reference preparation includes two steps: 
@@ -107,7 +107,6 @@ prepare_strain_ref.sh <ref_directory> Ecoli_O104_H4 Ecoli_O104_H4.fa <prophage_b
 ```bash
 prepare_multiref.sh <working_directory> <ref_directory> <config>
 ```
-
 
 ## Prophages and rRNA operons
 In order to provide additional information, all study strains would need two additional BED files:
@@ -132,7 +131,7 @@ Bacpipe:
 The following steps are performed during the pipeline execution: 
 * FastQC is ran on all of the fastq files; 
 * STAR is used to align the fastq files to the rRNA and tRNA reference to accurately estimate rRNA/tRNA content; 
-* Unsorted bam alignments are filtered using rRNA *bed* file, sorted, and indexed; 
+* Unsorted bam alignments are filtered using rRNA BED file, sorted, and indexed; 
 * tdf files are prepared for visualization in IGV; 
 * bigWig (bw) files are prepared for vizualization in majority of other genomic browsers; 
 * featureCounts is ran on genomic bam to evaluate the strandedness of the experiment; 
