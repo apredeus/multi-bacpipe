@@ -8,16 +8,14 @@ A pipeline for uniform multi-strain RNA-seq processing.
 (c) 2018, GPL v3 license
 
 ## Motivation
-This is an upgrade to [bacpipe](https://github.com/apredeus/bacpipe) that is capable of performing uniform RNA-seq appropriate annotation of muliple strains and/or genomes, and then create master expression tables streamlined for a detailed strain comparison. 
+Processing of multi-strain RNA-sequencing experiments is hard, because discrepancies between custom strain annotations introduce many false positive results. No previous approach allowed to analyze both orthologous and non-orthologous genes simultaneously. The results are generated in a form that's streamlined for downstream analysis in [Phantasus](https://artyomovlab.wustl.edu/phantasus/), as well as differential gene expression analysis in DESeq2, limma-voom, or edgeR. 
 
 When successfully applied, this should generate (for each strain):
 * genomic bam files for read-resolution visualization and analysis;
-* TDF files for visualization in IGV;
+* TDF files for quick and scalable visualization in IGV;
 * scaled bigWig files for visualization in JBrowse (see [doi:10.1128/mBio.01442-14](http://mbio.asm.org/content/5/4/e01442-14.full) for description of scaling); 
-* raw read and TPM expression tables - from [featureCounts](http://subread.sourceforge.net/), [rsem](https://deweylab.github.io/RSEM/), and [kallisto](https://pachterlab.github.io/kallisto/); 
+* raw read and TPM expression tables using [featureCounts](http://subread.sourceforge.net/) and accounting for multi-mapping reads; 
 * a single [MultiQC](http://multiqc.info/) quality control report.
-
-This should also generate several master tables for all sorts of downstream analysis (clustering, PCA, differential expression, etc).
 
 ## Installation and requirements 
 Clone the pipeline scripts into your home directory and add them to $PATH variable in bash: 
@@ -28,7 +26,7 @@ git clone https://github.com/apredeus/multi-bacpipe
 echo "export PATH=~/multi-bacpipe:~/multi-bacpipe/utils:\$PATH" >> ~/.bashrc
 ```
 
-To install the requirements, use [Bioconda](https://bioconda.github.io/). Below are the programs that need to be installed. In our experience, it helps to have roary and prokka installed in their own virtual environments. Management of virtual environments in Bioconda is described [here](https://conda.io/docs/user-guide/tasks/manage-environments.html).
+To install the requirements, use [Bioconda](https://bioconda.github.io/). Below are the programs that need to be installed. In our experience, it's best to have **prokka** and **roary** installed in dedicated virtual environments. Management of virtual environments in Bioconda is described [here](https://conda.io/docs/user-guide/tasks/manage-environments.html).
 
 ```bash 
 conda install fastqc
@@ -39,16 +37,16 @@ conda install igvtools
 conda install subread
 conda install blast 
 conda create -n prokka -c conda-forge -c bioconda prokka
-conda create -n roary  -c conda-forge -c bioconda roary
+conda create -n roary  -c bioconda roary
 ```
 /utils contains Linux-compiled utilities necessary for file processing: dos2unix converts Roary CSV output to Unix format, and bedGraphToBigWig is called upon when generating bigWig files. 
 
-Make sure you have added /utils to your $PATH, or made these utilities available in any other way. 
+Make sure you have added /utils to your $PATH, or made these utilities available in any other way. Provided binaries should work on any 64-bit Unix machine. 
 
 You also need to have Perl installed. Sorry. 
 
 ## Setting up the working directory
-After you have chosen your working directory (with enough space and where you have write permissions), you need to create a sub-directory named **fastqs**. 
+After you have chosen your working directory (**with enough space and where you have write permissions**), you need to create a sub-directory named **fastqs**. 
 Place your archived RNA-seq *fastq* files here. Stick to the following naming rules: 
 
 * Single-end sequencing: **Sample_ID.fastq.gz**; 
@@ -56,11 +54,15 @@ Place your archived RNA-seq *fastq* files here. Stick to the following naming ru
 
 If you have more than one file per sample (e.g. if it was sequenced twice), it's recommended to merge these files first.
 
-## Useful terms
+## Used terms
 We use the following terms during the multi-strain RNA-seq analysis: 
+
 * **study strains** - strains used for the experiment that is being processed;
 * **reference strains** - related, well-annotated strains used as a reference for annotation; 
-* **key strain** - a strain which locus tags could be used instead of gene names, e.g. LT2 for *Salmonella enterica* serovar Typhimurium. 
+* **key strain** - one of reference strains which locus tags could be used instead of gene names, e.g. LT2 for *Salmonella enterica* serovar Typhimurium, or MG1655 for *Escherichia coli*;
+* **working directory** - a directory where analysis is done; any writeable directory with enough space; 
+* **reference directory** - a directory where all reference files are stored; 
+* **strain tag** - an unique identifier describing a study or a reference strain. 
 
 ## Configuration file
 Multi-strain processing is relying onto single-strain processing principles, described in [Bacpipe README](https://github.com/apredeus/bacpipe). In order to process multiple strains, you would need to make a simple tab-separated configuration file. The file should contain one tab-separated sample ID - strain ID pair per line. It should also include all of the strains that you want to use as a reference: 
@@ -77,24 +79,40 @@ Reference	DE3
 
 See details on reference preparation below. 
 
+## Reference strain requirements 
+For each reference strain, you need to have a Roary-style GFF file placed into **refstr** subdirectory in your working directory. Expected name format is <tag>.roary.gff. Each file needs to satisfy the following criteria: 
+
+* File consists of three parts, similar to Prokka output: 
+** Tab-separated GTF annotation;
+** ##FASTA delimiter; 
+** strain's genomic fasta.
+* Only coding sequence features (CDS) are present; 
+* Each coding seqeunce is annotated with a **unique** ID - locus tag for this strain; 
+* If there's a common name for a gene associated with this CDS, it's given in Name= field; 
+* If there is no common name reported, no Name is given. 
+
 ## Two-step reference preparation
 Reference preparation includes two steps: 
-* Prepare reference for all strains you are using in your RNA-seq using **prepare_strain_ref.sh** (in the config example above, these are Ecoli_O157_H7 and Ecoli_O104_H4). **All you need to have for your study strains is genome assembly.** Annotations are not required; if a good annotation of a strain exists, it could be used as a reference strain, using a different name. Using the example above, the command would have to be applied twice, once for each of the study strains (Ecoli_O157_H7, Ecoli_O104_H4):
+* Prepare reference for all strains you are using in your RNA-seq using **prepare_strain_ref.sh** (in the config example above, these are Ecoli_O157_H7 and Ecoli_O104_H4). **All you need to have for your study strains is genome assembly, prophage BED file, and rRNA operon BED file.** Annotations are not required; if a good annotation of a strain exists, it could be used as a reference strain, using a different name. 
 
-```
+Using the example config above, the command would have to be applied twice, once for each of the study strains (Ecoli_O157_H7, Ecoli_O104_H4):
+
+```bash
 prepare_strain_ref.sh <ref_directory> Ecoli_O157_H7 Ecoli_O157_H7.fa <prophage_bed> <rRNA_bed>
 prepare_strain_ref.sh <ref_directory> Ecoli_O104_H4 Ecoli_O104_H4.fa <prophage_bed> <rRNA_bed>
 ```
 
-* Prepare combined reference using select reference strains (in the config example above, MG1655, DH5a, and DE3) by running **prepare_multiref.sh**. 
+* Prepare combined reference using select reference strains (in the config example above, tags are MG1655, DH5a, and DE3) by running **prepare_multiref.sh**. 
 
-`prepare_multiref.sh <working_directory> <ref_directory> <config>` 
+```bash
+prepare_multiref.sh <working_directory> <ref_directory> <config>
+```
 
 
 ## Prophages and rRNA operons
-In order to provide additional information, all study strains would need two additional *bed* files:
-* Putative prophage intervals - these can be generated by parsing the output of [PHASTER](http://phaster.ca/); 
-* rRNA operon borders - I am working on correctly guessing the borders automatically, but for now, we're going to need a *bed* file. This is very important in order to accurately calculate the stats, especially the percentage of multi-mapping and un-assigned reads **after rRNA removal**.
+In order to provide additional information, all study strains would need two additional BED files:
+* Putative prophage intervals - these can be generated by parsing the output of [PHASTER](http://phaster.ca/);  
+* rRNA operon BED file. This is very important in order to accurately calculate the stats, especially the percentage of multi-mapping and un-assigned reads **after rRNA removal**.
 
 Both of these files would have to be compiled manually for each study strain, and then used when running **prepare_strain_ref.sh** command.
 
@@ -124,5 +142,3 @@ The following steps are performed during the pipeline execution:
 * multiqc is ran to summarize everything as a nicely formatted report. 
     
 In the end you are expected to obtain a number of new directories: FastQC, bams, tdfs_and_bws, stats, strand, featureCounts, exp_tables. Each directory would contain the files generated by its namesake, as well as all appropriate logs. The executed commands with all of the versions and exact options are recorded in the master log. 
-    
-    
