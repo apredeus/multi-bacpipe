@@ -51,8 +51,12 @@ WDIR=$1
 REFDIR=$2
 CONFIG=$3
 
+## make sure process quits if inconsistencies are discovered 
+set -euo pipefail
+
 ## config file has to be in $WDIR; throw an error otherwise 
 CONFIG=`basename $CONFIG`
+
 if [[ ! -s $WDIR/$CONFIG ]]
 then
   >&2 echo "ERROR: Config file must be located in the working directory!" 
@@ -65,16 +69,20 @@ if [[ $CPUS == "" ]]
   CPUS=16
 fi
 
+## TODO: check if $STUDY and $REFSTR come up non-empty 
+
 STUDY=`grep -v "^Reference" $WDIR/$CONFIG | cut -f 2 | sort | uniq`
 REFSTR=`grep   "^Reference" $WDIR/$CONFIG | cut -f 2 | sort | uniq`
 
+echo -e "Following study strains will be processed:\n$STUDY"
+echo -e "Following reference strains will be processed:\n$REFSTR"
+
 source activate roary 
-cd $WDIR/refstr
-## make sure process quits if inconsistencies are discovered 
-set -euo pipefail
+cd $WDIR/ref
 
 ## check if reference strain GTF files in refstr are in Roary-friendly format (e.g. converted from NCBI to). 
 ## reqs: 1) unique IDs that are locus tags; 2) no names that are equal to ID; 3) only CDS features; 4) ##FASTA and genomic fa are present. 
+## TODO: redo directory structure. All references should stay in the same dir. 
 
 for i in $REFSTR
 do
@@ -111,15 +119,17 @@ sed '1 s/.roary//g' gene_presence_absence.csv | sed '1 s/0_//g' > gene_presence_
 mv gene_presence_absence.csv.tmp gene_presence_absence.csv
 
 ## make annotated CDS and ncRNA tables
-cd $WDIR/refstr
+cd $WDIR/ref
 echo "==> Generating a table of CDS orthologs."
-annotate_CDS.pl $WDIR/roary/gene_presence_absence.csv $REFDIR $WDIR/mult.cfg > annotated_CDS.tsv
+annotate_CDS.pl $WDIR/roary/gene_presence_absence.csv $REFDIR $WDIR/$CONFIG > annotated_CDS.tsv
 NCDS=`wc -l annotated_CDS.tsv | awk '{print $1}'`
 echo "==> Table of $NCDS CDS orthologs successfully generated!"
 
 echo "==> Generating a table of ncRNA orthologs."
-annotate_ncRNA.pl $REFDIR $WDIR/mult.cfg > annotated_ncRNA.tsv
+annotate_ncRNA.pl $REFDIR $WDIR/$CONFIG > annotated_ncRNA.tsv
 NRNA=`wc -l annotated_ncRNA.tsv | awk '{print $1}'`
 echo "==> Table of $NRNA ncRNA orthologs successfully generated!"
+
+## TODO: print stats - how many genes are common for all study strains, how many are unique, how many are seen in 2 and more strains.
 
 echo "==> DONE generating multi-strain reference!" 

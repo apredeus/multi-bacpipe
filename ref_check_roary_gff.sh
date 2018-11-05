@@ -3,7 +3,7 @@
 WDIR=$1
 TAG=$2
 
-cd $WDIR/refstr
+cd $WDIR/ref
 
 if [[ -s $TAG.roary.gff ]]
 then 
