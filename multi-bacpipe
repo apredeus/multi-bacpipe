@@ -18,7 +18,7 @@ then
   echo "Synopsis:"
   echo "  Process multistrain bacterial RNA-seq data using pre-created reference"
   echo "Usage:" 
-  printf "  ${GRN}multi-bacpipe${NC} ${GRN2}<ref_dir> <config> [-p CPUs] [-k key_strain]${NC}\n"
+  printf "  ${GRN}multi-bacpipe${NC} ${GRN2}<working_directory> <config> [-p CPUs] [-k key_strain]${NC}\n"
   echo 
   echo "Positional arguments:"
   echo "  <ref_dir>      Directory with all the refence sub-directories"
@@ -47,7 +47,6 @@ echo "==========================================================================
 echo
 echo
 
-CONFIG=""
 CPUS=""
 KEYSTR="" 
 PARAMS=""
@@ -92,10 +91,15 @@ while (( "$#" )); do
 done
 eval set -- "$PARAMS"
 
-REFDIR=$1
+WDIR=$1
 CONFIG=$2
 
-if [[ $REFDIR == "" || $CONFIG == "" || ! -d $REFDIR || ! "$(ls -A $REFDIR)" ]]
+## replace simplified path with full path 
+WDIR=`readlink -f $WDIR`
+CONFIG=`readlink -f $CONFIG`
+REFDIR=$WDIR/study_strains
+
+if [[ $WDIR == "" || $CONFIG == "" || ! -d $REFDIR || ! "$(ls -A $REFDIR)" ]]
 then
   echo "ERROR: You must specify a non-empty reference directory and config file!"
   exit 1  
@@ -111,10 +115,7 @@ fi
 
 set -euo pipefail
 
-WDIR=`pwd`
 cd $WDIR 
-REFDIR=`readlink -f $REFDIR`
-CONFIG=`readlink -f $CONFIG`
 
 echo 
 echo "=================================================================================="

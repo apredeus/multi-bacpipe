@@ -8,10 +8,10 @@ NC='\033[0m' # No Color
 if [[ $# < 3 ]]
 then
   echo 
-  printf "Step 2 of reference preparation:\n" 
+  printf "One-command reference preparation:\n" 
   printf "prepare multi-reference for all ${RED}study${NC} and ${GRN}reference${NC} strains listed in the config file.\n"
   echo "======================================================================================"
-  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> <ref_directory> <config> [-p CPUs]${NC}\n"
+  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> <config> [-p CPUs]${NC}\n"
   echo 
   exit 1
 fi
@@ -48,8 +48,7 @@ done
 eval set -- "$PARAMS"
 
 WDIR=$1
-REFDIR=$2
-CONFIG=$3
+CONFIG=$2
 
 ## make sure process quits if inconsistencies are discovered 
 set -euo pipefail
@@ -74,41 +73,47 @@ fi
 STUDY=`grep -v "^Reference" $WDIR/$CONFIG | cut -f 2 | sort | uniq`
 REFSTR=`grep   "^Reference" $WDIR/$CONFIG | cut -f 2 | sort | uniq`
 
-echo -e "Following study strains will be processed:\n$STUDY"
-echo -e "Following reference strains will be processed:\n$REFSTR"
+echo -e "Following study strains will be processed:\n\n$STUDY\n"
+echo -e "Following reference strains will be processed:\n\n$REFSTR\n"
 
 source activate roary 
-cd $WDIR/ref
+cd $WDIR/ref_strains
 
 ## check if reference strain GTF files in refstr are in Roary-friendly format (e.g. converted from NCBI to). 
 ## reqs: 1) unique IDs that are locus tags; 2) no names that are equal to ID; 3) only CDS features; 4) ##FASTA and genomic fa are present. 
-## TODO: redo directory structure. All references should stay in the same dir. 
 
 for i in $REFSTR
 do
   ref_check_roary_gff.sh $WDIR $i
 done 
+echo
+echo "ALL REFERENCE STRAIN GFF FILES ARE OK!"  
+echo
 
 ## check if every study strain has a non-empty folder - take this part from the mbc_check_config.sh 
 
 for i in $STUDY
 do
-  ref_check_study_dir.sh $REFDIR $i
+  ref_check_study_dir.sh $WDIR $i
 done  
+echo
+echo "ALL STUDY STRAIN FILES AND DIRS ARE OK!"  
+echo
 
 ## make study strain GFF to run roary 
 for i in $STUDY
 do
-  cat $REFDIR/$i/$i.CDS.gff   >  0_$i.roary.gff
+  cat $WDIR/study_strains/$i/$i.CDS.gff   >  0_$i.roary.gff
   echo "##FASTA"              >> 0_$i.roary.gff
-  cat $REFDIR/$i/$i.genome.fa >> 0_$i.roary.gff
+  cat $WDIR/study_strains/$i/$i.genome.fa >> 0_$i.roary.gff
 done 
 
 ## run Roary on all the strains present in the refstr
 
 echo "==> Running Roary on all strains, using $CPUS cores..."
-roary -p $CPUS -v -e -f roary *.roary.gff &> roary.log
-mv roary $WDIR
+roary -p $CPUS -v -e -f roary *.gff &> roary.log
+rm 0*.roary.gff
+mv roary roary.log $WDIR
 
 ## edit the presence-absence file. You should have dos2unix in your $PATH
 
@@ -119,14 +124,14 @@ sed '1 s/.roary//g' gene_presence_absence.csv | sed '1 s/0_//g' > gene_presence_
 mv gene_presence_absence.csv.tmp gene_presence_absence.csv
 
 ## make annotated CDS and ncRNA tables
-cd $WDIR/ref
+cd $WDIR
 echo "==> Generating a table of CDS orthologs."
-annotate_CDS.pl $WDIR/roary/gene_presence_absence.csv $REFDIR $WDIR/$CONFIG > annotated_CDS.tsv
+annotate_CDS.pl $WDIR/roary/gene_presence_absence.csv $WDIR/study_strains $WDIR/$CONFIG > annotated_CDS.tsv
 NCDS=`wc -l annotated_CDS.tsv | awk '{print $1}'`
 echo "==> Table of $NCDS CDS orthologs successfully generated!"
 
 echo "==> Generating a table of ncRNA orthologs."
-annotate_ncRNA.pl $REFDIR $WDIR/$CONFIG > annotated_ncRNA.tsv
+annotate_ncRNA.pl $WDIR/study_strains $WDIR/$CONFIG > annotated_ncRNA.tsv
 NRNA=`wc -l annotated_ncRNA.tsv | awk '{print $1}'`
 echo "==> Table of $NRNA ncRNA orthologs successfully generated!"
 

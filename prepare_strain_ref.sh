@@ -1,6 +1,7 @@
 #!/bin/bash 
 
-##   v0.2 - all necessary files are in one place (REFDIR/SPECIES)
+##   v0.3 - streamlined to run as one-command prep
+##   this script would generate everything in the working directory, which generally should be $WDIR/study_strains
 ##   no Prokka annotation of proteins - just find the CDS, Roary will do the rest. 
 ##   no Rsem/kallisto - they don't work correctly anyway. 
 
@@ -17,10 +18,10 @@ then
   echo 
   printf "Step 1 of reference preparation: prepare reference for a single ${RED}study${NC} strain.\n"
   echo "============================================================================="
-  printf "Usage: ${GRN}prepare_strain_ref.sh ${GRN2}<ref_directory> <strain_tag> <genome_fa> <prophage_bed> <rRNA_bed> [-p CPUs]${NC}\n"
+  printf "Usage: ${GRN}prepare_strain_ref.sh ${GRN2}<working_directory> <genome_fa> <prophage_bed> [-p CPUs]${NC}\n"
   echo "       (to predict ncRNAs using Prokka's Rfam DB)"
   echo "       - or - " 
-  printf "       ${GRN}prepare_strain_ref.sh ${GRN2}<ref_directory> <strain_tag> <genome_fa> <prophage_bed> <rRNA_bed> [-p CPUs] [-r ref_ncRNA_fasta]${NC}\n"
+  printf "       ${GRN}prepare_strain_ref.sh ${GRN2}<working_directory> <genome_fa> <prophage_bed> [-p CPUs] [-r ref_ncRNA_fasta]${NC}\n"
   echo "       (to assign ncRNAs by simply blasting the existing reference ncRNA fasta to the genome)"
   echo 
   exit 1
@@ -72,19 +73,18 @@ while (( "$#" )); do
 done
 eval set -- "$PARAMS"
 
-REFDIR=$1
-TAG=$2
-FA=$3
-PROPHAGE=$4
-RRNA=$5
+WDIR=$1
+FA=$2
+PROPHAGE=$3
+TAG=${FA%%.fa}
 
-if [[ -d "$REFDIR/$TAG" ]]
+if [[ -d "$WDIR/study_strains/$TAG" ]]
 then
-  echo "Found $REFDIR/$TAG! Will add files to the existing directory."
-  rm -rf $REFDIR/$TAG/*.STAR $REFDIR/$TAG/*.prokka 
+  echo "Found $WDIR/study_strains/$TAG! Will add files to the existing directory."
+  rm -rf $WDIR/study_strains/$TAG/*.STAR $WDIR/study_strains/$TAG/*.prokka 
 else 
-  echo "Directory $REFDIR/$TAG was not found and will be created." 
-  mkdir $REFDIR/$TAG
+  echo "Directory $WDIR/study_strains/$TAG was not found and will be created." 
+  mkdir $WDIR/study_strains/$TAG
 fi
 
 if [[ $CPUS == "" ]]
@@ -147,12 +147,15 @@ mkdir ${TAG}.STAR
 STAR --runThreadN $CPUS --runMode genomeGenerate --genomeDir ${TAG}.STAR --genomeFastaFiles $TAG.genome.fa --genomeSAindexNbases 10 &> /dev/null
 mv Log.out $TAG.star.log 
 
-## mv all to the ref dir 
-mv $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $REFDIR/$TAG
-mv $TAG.gene.gff $TAG.CDS.gff $TAG.ncRNA.gff $REFDIR/$TAG
-mv $TAG.prokka ${TAG}.STAR $TAG.star.log $REFDIR/$TAG
-cp $PROPHAGE $REFDIR/$TAG/$TAG.prophage.bed
-cp $RRNA     $REFDIR/$TAG/$TAG.rRNA.bed 
+##make rRNA/tRNA interval file  
+make_rrna_operon.pl $TAG.prokka/$TAG.prokka.gff $TAG.ncRNA.gff | sort -k1,1 -k2,2n | bedtools merge -i - > $TAG.rRNA.bed
 
-echo "All the generated files and indexes have been moved to $REFDIR/$TAG."
+## mv all to the ref dir 
+mv $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $WDIR/study_strains/$TAG
+mv $TAG.gene.gff $TAG.CDS.gff $TAG.ncRNA.gff $WDIR/study_strains/$TAG
+mv $TAG.prokka ${TAG}.STAR $TAG.star.log $WDIR/study_strains/$TAG
+cp $PROPHAGE $WDIR/study_strains/$TAG/$TAG.prophage.bed
+mv $TAG.rRNA.bed $WDIR/study_strains/$TAG
+
+echo "All the generated files and indexes have been moved to $WDIR/study_strains/$TAG."
 echo "Strain $TAG: all done generating reference!" 

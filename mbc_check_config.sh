@@ -24,13 +24,6 @@ else
   exit 1
 fi
 
-if [[ -d refstr && "$(ls -A refstr)" ]]; then
-  echo "==> Found non-empty directory named refstr! Continuing."
-else
-  echo "ERROR: directory fastqs does not exist or is empty!"
-  exit 1
-fi
-
 if [[ ! -d bams || ! -d stats || ! -d strand || ! -d tdfs_and_bws || ! -d featureCounts || ! -d FastQC || ! -d exp_tables  ]]  
 then
   echo "One (or more) of the required directories is missing, I will try to create them."
