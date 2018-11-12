@@ -11,16 +11,31 @@ then
   printf "One-command reference preparation:\n" 
   printf "prepare multi-reference for all ${RED}study${NC} and ${GRN}reference${NC} strains listed in the config file.\n"
   echo "======================================================================================"
-  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> <config> [-p CPUs]${NC}\n"
+  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> <config> [-p CPUs] [-r ref_ncRNA_fasta]${NC}\n"
   echo 
   exit 1
 fi
 
 PARAMS=""
 CPUS=""
+NC_REF="" 
 
 while (( "$#" )); do
   case "$1" in
+    -r|--ref_ncrna)
+      NC_REF=$2
+      shift 2
+      if [[ $NC_REF == "" ]]
+      then
+        echo "ERROR: -r flag requires a non-empty argument (reference ncRNA fasta file)!" 
+        exit 1
+      fi
+      echo "==> Invoking -r option: annotation of ncRNA by blasting the reference ncRNA fasta to genome."
+      echo 
+      printf "${RED}If you are using a custom-made ncRNA fasta file, please make sure sequence names are correct.${NC}\n"
+      printf "${RED}They will be used as ncRNA gene names in the GTF file and the final expression table.${NC}\n"
+      echo 
+      ;;
     -p|--cpus)
       CPUS=$2
       shift 2
@@ -91,6 +106,21 @@ echo "ALL REFERENCE STRAIN GFF FILES ARE OK!"
 echo
 
 ## check if every study strain has a non-empty folder - take this part from the mbc_check_config.sh 
+
+cd $WDIR/study_strains
+
+if [[ $NC_REF == "" ]]
+then
+  for i in $STUDY
+  do
+    prepare_strain_ref.sh $WDIR $i.fa $i.prophage.bed -p $CPUS
+  done 
+else 
+  for i in $STUDY 
+  do
+    prepare_strain_ref.sh $WDIR $i.fa $i.prophage.bed -p $CPUS -r $NC_REF
+  done
+fi
 
 for i in $STUDY
 do

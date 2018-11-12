@@ -41,11 +41,6 @@ while (( "$#" )); do
         echo "ERROR: -r flag requires a non-empty argument (reference ncRNA fasta file)!" 
         exit 1 
       fi
-      echo "==> Invoking -r option: annotation of ncRNA by blasting the reference ncRNA fasta to genome."
-      echo 
-      printf "${RED}If you are using a custom-made ncRNA fasta file, please make sure sequence names are correct.${NC}\n"
-      printf "${RED}They will be used as ncRNA gene names in the GTF file and the final expression table.${NC}\n"
-      echo 
       ;;  
     -p|--cpus)
       CPUS=$2
