@@ -92,20 +92,9 @@ echo -e "Following study strains will be processed:\n\n$STUDY\n"
 echo -e "Following reference strains will be processed:\n\n$REFSTR\n"
 
 source activate roary 
-cd $WDIR/ref_strains
 
-## check if reference strain GTF files in refstr are in Roary-friendly format (e.g. converted from NCBI to). 
-## reqs: 1) unique IDs that are locus tags; 2) no names that are equal to ID; 3) only CDS features; 4) ##FASTA and genomic fa are present. 
-
-for i in $REFSTR
-do
-  ref_check_roary_gff.sh $WDIR $i
-done 
-echo
-echo "ALL REFERENCE STRAIN GFF FILES ARE OK!"  
-echo
-
-## check if every study strain has a non-empty folder - take this part from the mbc_check_config.sh 
+## prepare individual strain references for each study strain
+## you have to have a genome file and prophage file in place 
 
 cd $WDIR/study_strains
 
@@ -122,6 +111,7 @@ else
   done
 fi
 
+## now check if that all worked out OK 
 for i in $STUDY
 do
   ref_check_study_dir.sh $WDIR $i
@@ -130,11 +120,24 @@ echo
 echo "ALL STUDY STRAIN FILES AND DIRS ARE OK!"  
 echo
 
+cd $WDIR/ref_strains
+
+## check if reference strain GTF files in refstr are in Roary-friendly format (e.g. converted from NCBI to). 
+## reqs: 1) unique IDs that are locus tags; 2) no names that are equal to ID; 3) only CDS features; 4) ##FASTA and genomic fa are present. 
+
+for i in $REFSTR
+do
+  ref_check_roary_gff.sh $WDIR $i
+done 
+echo
+echo "ALL REFERENCE STRAIN GFF FILES ARE OK!"  
+echo
+
 ## make study strain GFF to run roary 
 for i in $STUDY
 do
   cat $WDIR/study_strains/$i/$i.CDS.gff   >  0_$i.roary.gff
-  echo "##FASTA"              >> 0_$i.roary.gff
+  echo "##FASTA"                          >> 0_$i.roary.gff
   cat $WDIR/study_strains/$i/$i.genome.fa >> 0_$i.roary.gff
 done 
 
