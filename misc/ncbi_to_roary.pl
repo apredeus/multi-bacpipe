@@ -13,7 +13,7 @@ my $tag = shift @ARGV;
 
 open GFF,"<",$gff or die "$!"; 
 open FNA,"<",$fna or die "$!"; 
-open RRY,">","$tag.roary.gff" or die "$!"; 
+open RRY,">","$tag.gff" or die "$!"; 
 
 my $cds_coord={};
 my @gff; 

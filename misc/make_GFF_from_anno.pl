@@ -35,21 +35,31 @@ while (<PRODS>) {
 } 
 
 my $gff_path = join '/',$wdir,'study_strains',$tag,$tag;
-my $cds_gff = $gff_path . ".CDS.gff";  
+my $prokka_gff = join '.',$gff_path,"prokka/$tag.prokka.gff";  
 my $ncrna_gff = $gff_path . ".ncRNA.gff";  
 
-open CDS_GFF,"<",$cds_gff or die "$!"; 
+#print STDERR "DEBUG: $prokka_gff\n"; 
+#print STDERR "DEBUG: $ncrna_gff\n"; 
+
+open PROKKA_GFF,"<",$prokka_gff or die "$!"; 
 open NCRNA_GFF,"<",$ncrna_gff or die "$!"; 
  
-while (<CDS_GFF>) { 
+while (<PROKKA_GFF>) { 
   chomp; 
-  s/\tID=/%/; 
-  my @tt = split /%/; 
-  $tt[1] =~ m/^(.*?);/; 
-  my $id = $1;
-  my $name = (defined $names{$id}) ? $names{$id} : $id; 
-  my $product = (defined $prods{$id}) ? $prods{$id} : "product=hypothetical protein;";  
-  printf "%s\tID=%s;Name=%s;%sgene_biotype=protein_coding;\n",$tt[0],$id,$name,$product; 
+  next if (m/^#/ || m/^$/ || ! m/\t/); 
+  
+  if (m/\tCDS\t/) { 
+    s/\tID=/%/; 
+    my @tt = split /%/; 
+    $tt[1] =~ m/^(.*?);/; 
+    my $id = $1;
+    my $name = (defined $names{$id}) ? $names{$id} : $id; 
+    my $product = (defined $prods{$id}) ? $prods{$id} : "product=hypothetical protein;";  
+    printf "%s\tID=%s;Name=%s;%sgene_biotype=protein_coding;\n",$tt[0],$id,$name,$product; 
+  } else {
+    ## if rRNA/tRNA/CRISPR, just print as is  
+    print "$_\n"; 
+  }  
 }
 
 while (<NCRNA_GFF>) {
@@ -72,8 +82,7 @@ while (<NCRNA_GFF>) {
   printf "%s\tID=%s;Name=%s;product=%s;gene_biotype=%s;\n",$tt[0],$id,$name,$product,$biotype; 
 }
 
-
-close CDS_GFF; 
+close PROKKA_GFF; 
 close NCRNA_GFF; 
 
 close EXP; 

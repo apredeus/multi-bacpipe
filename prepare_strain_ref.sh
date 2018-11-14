@@ -117,13 +117,18 @@ else
   ## Make sure you have correct ncRNA names in the reference fasta - they will be used as a Name in GFF. 
   echo "Running Prokka annotation; using --noanno option to only discover CDS."
   echo "Annotating noncoding RNAs using blastn and custom reference file $NC_REF!" 
-  makeblastdb -dbtype nucl -in $TAG.genome.fa -out ${TAG}_blast &> /dev/null 
-  blastn -query $NC_REF -db ${TAG}_blast -evalue 1 -task megablast -outfmt 6 > $TAG.ncRNA_blast.out 2> /dev/null 
-  make_ncRNA_gff_from_blast.pl $NC_REF ${TAG%%_*} $TAG.ncRNA_blast.out > $TAG.ncRNA.gff
-  
-  ## note no --rfam option in this case  
+ 
+  ## find all CDS
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} $TAG.genome.fa &> /dev/null 
   grep -P "\tCDS\t" $TAG.prokka/$TAG.prokka.gff | sed "s/$/;gene_biotype=protein_coding;/g" > $TAG.CDS.gff
+  ## find all sORF and ncRNA
+  makeblastdb -dbtype nucl -in $TAG.genome.fa -out ${TAG}_blast &> /dev/null 
+  blastn -query $NC_REF -db ${TAG}_blast -evalue 1 -task megablast -outfmt 6 > $TAG.ncRNA_blast.out 2> /dev/null 
+
+  ## new version of this script drops all mia- sORFs overlapping a Prokka CDS 
+  make_ncRNA_gff_from_blast.pl $NC_REF $TAG.CDS.gff ${TAG%%_*} $TAG.ncRNA_blast.out > $TAG.ncRNA.gff
+  
+  ## note no --rfam option in this case  
   N_CDS=`grep -c -P "\tCDS\t" $TAG.CDS.gff`
   N_NCR=`wc -l $TAG.ncRNA.gff | awk '{print $1}'`
   echo
