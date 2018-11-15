@@ -1,6 +1,6 @@
 #!/usr/bin/env perl 
 
-## TODO: make sure works correctly without the reference strain
+## TODO: make sure this works correctly without the reference strain
 
 use strict; 
 use warnings; 
@@ -49,6 +49,7 @@ while (<CONFIG>) {
 }
 
 my @study_strains = keys %{$sample_counts}; 
+my $n_study = scalar @study_strains; 
 @study_strains = sort { $a cmp $b } @study_strains;
 @ref_strains   = sort { $a cmp $b } @ref_strains;
 my @strains = @study_strains; 
@@ -84,6 +85,16 @@ while (<ANN_CDS>) {
   my @tt   = split /\t+/;
   my $name = shift @tt; 
   my $loc  = shift @tt;
+  
+  ## following snippet is to skip genes that are absent in all study strains
+  ## sometimes Prokka doesn't find small ORFs which we later find using blast
+  ## this would prevent the issue with name "already seen", like thrL/thrL_2 
+  my $present_in_study = 0; 
+  for (my $i = 0; $i < $n_study; $i++) { 
+    $present_in_study = 1 if ($tt[$i] ne "NONE"); 
+  } 
+  next if (! $present_in_study); 
+
   my $ref_idx = $strain_idx->{$refstr};
   my $ref_lt = $tt[$ref_idx]; 
   
@@ -122,12 +133,11 @@ while (<ANN_NC>) {
   
   if (! defined $ann->{$name}) { 
     $ann->{$name}->{count} = 1;                     ## how many times have we seen this name 
-    
     foreach my $strain (@strains) { 
       my $idx = $strain_idx->{$strain}; 
       my $locus_tag = $tt[$idx];                    ## account for two shifts above  
       $ann->{$name}->{$strain}->{lt} = $locus_tag;
-      $ann->{$name}->{loc} = $loc;                  ## chr/prophage/plasmid  
+      $ann->{$name}->{loc} = $loc;                  ## chr/prophage/plasmid 
     } 
   } else {
     my $name_count = $ann->{$name}->{count} + 1; 
