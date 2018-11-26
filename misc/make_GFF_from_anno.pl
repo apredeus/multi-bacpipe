@@ -3,6 +3,10 @@
 use strict; 
 use warnings; 
 
+if ($#ARGV != 2) { 
+  die "USAGE: make_GFF_from_anno.pl <working_dir> <strain_tag> <products_file>\n";
+} 
+
 my $wdir = shift @ARGV; 
 my $tag = shift @ARGV; 
 my $products = shift @ARGV; 
@@ -54,10 +58,29 @@ while (<PROKKA_GFF>) {
     $tt[1] =~ m/^(.*?);/; 
     my $id = $1;
     my $name = (defined $names{$id}) ? $names{$id} : $id; 
-    my $product = (defined $prods{$id}) ? $prods{$id} : "product=hypothetical protein;";  
+    my $product = (defined $prods{$id}) ? $prods{$id} : "note=hypothetical protein;";  
     printf "%s\tID=%s;Name=%s;%sgene_biotype=protein_coding;\n",$tt[0],$id,$name,$product; 
+  } elsif (m/\ttmRNA\t/) {
+    s/product=/note=/; 
+    print "$_\n"; 
+  } elsif (m/note=CRISPR/) { 
+    s/\tnote=/\tName=CRISPR;note=/g; 
+    print "$_\n"; 
   } else {
-    ## if rRNA/tRNA/CRISPR, just print as is  
+    my $name;
+    m/\tID=(.*?);/;
+    my $lt = $1; 
+    if (m/product=16S/) { 
+      $name="16S"; 
+    } elsif (m/product=23S/) { 
+      $name="23S"; 
+    } elsif (m/product=5S/) {
+      $name="5S"; 
+    } elsif (m/product=(tRNA-.*?)\(/) {
+      $name="$1"; 
+    } 
+    s/product=/note=/; 
+    s/ID=$lt/ID=$lt;Name=$name/;
     print "$_\n"; 
   }  
 }
@@ -79,7 +102,7 @@ while (<NCRNA_GFF>) {
     $product = "Non-coding RNA $name";  
     $biotype = "noncoding_rna"; 
   } 
-  printf "%s\tID=%s;Name=%s;product=%s;gene_biotype=%s;\n",$tt[0],$id,$name,$product,$biotype; 
+  printf "%s\tID=%s;Name=%s;note=%s;gene_biotype=%s;\n",$tt[0],$id,$name,$product,$biotype; 
 }
 
 close PROKKA_GFF; 

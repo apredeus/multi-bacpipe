@@ -5,7 +5,7 @@
 
 use strict; 
 use warnings; 
-use Data::Dumper; 
+#use Data::Dumper; 
 
 my $prokka_gff = shift @ARGV; 
 my $ncrna_gff  = shift @ARGV; 

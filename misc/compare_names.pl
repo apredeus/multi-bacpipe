@@ -6,6 +6,10 @@ use warnings;
 ## compare names in a given reference with names assigned by Roary 
 ## report discrepancies, fix if necessary 
 
+if ($#ARGV != 1) { 
+  die "USAGE: compare_names.pl <ref_gff> <master_exp_table>\n";
+} 
+
 my $ref_gff = shift @ARGV; 
 my $exp_table = shift @ARGV; 
 

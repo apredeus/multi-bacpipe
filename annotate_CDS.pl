@@ -7,8 +7,7 @@
 ## 2) location (chromosome/prophage/plasmid),
 ## 3-n) all IDs (locus tags) for N used + n reference strains. 
 
-## roary CSV file needs to be converted with dos2unix, and 
-## also have tRNA entries removed (I dont know why are they there in the first place). 
+## roary CSV file needs to be converted with dos2unix
 
 use strict; 
 use warnings; 
