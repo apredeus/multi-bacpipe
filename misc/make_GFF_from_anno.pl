@@ -65,7 +65,11 @@ while (<PROKKA_GFF>) {
     print "$_\n"; 
   } elsif (m/note=CRISPR/) { 
     s/\tnote=/\tName=CRISPR;note=/g; 
-    print "$_\n"; 
+    print "$_\n";
+  } elsif (m/\tmisc_RNA\t/) { 
+    ## if we are using ncRNAs predicted by Prokka/Rfam, skip here
+    ## they will be taken below from a ncRNA GFF file 
+    next;  
   } else {
     my $name;
     m/\tID=(.*?);/;

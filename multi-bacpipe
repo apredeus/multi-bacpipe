@@ -123,7 +123,8 @@ echo
 
 echo "==> ["`date +%H:%M:%S`"] Step 0: Checking configuration file and reference availability."
 echo 
-cd $WDIR 
+cd $WDIR
+#TODO: this now fails if you don't delete all of the generated dirs; optimize behaviour  
 mbc_check_config.sh $WDIR $REFDIR $CONFIG
 echo 
 echo "=================================================================================="

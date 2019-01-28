@@ -83,7 +83,8 @@ if [[ $CPUS == "" ]]
   CPUS=16
 fi
 
-## TODO: check if $STUDY and $REFSTR come up non-empty 
+## TODO: check if $STUDY and $REFSTR come up non-empty
+## TODO: check if all works with Rfam workflow (names don't get extracted)  
 
 STUDY=`grep -v "^Reference" $WDIR/$CONFIG | cut -f 2 | sort | uniq`
 REFSTR=`grep   "^Reference" $WDIR/$CONFIG | cut -f 2 | sort | uniq`
