@@ -14,19 +14,21 @@ if [[ $# < 3 ]]
 then
   echo
   echo "Version:"
-  echo "  v.0.2.1, Alexander Predeus (predeus@gmail.com), 2018" 
+  echo "  v0.5.0, Alexander Predeus (predeus@gmail.com), 2018" 
   echo "Synopsis:"
   echo "  Process multistrain bacterial RNA-seq data using pre-created reference"
-  echo "Usage:" 
-  printf "  ${GRN}multi-bacpipe${NC} ${GRN2}<working_directory> <config> [-p CPUs] [-k key_strain]${NC}\n"
+  echo "Usage - multi-strain processing:" 
+  printf "  ${GRN}bacpipe${NC} ${GRN2}<working_directory> <config> [-p CPUs] [-k key_strain]${NC}\n"
+  echo "Usage - single strain with established genome/annotation:" 
+  printf "  ${GRN}bacpipe${NC} ${GRN2}<working_directory> --simple [-p CPUs]${NC}\n"
   echo 
   echo "Positional arguments:"
-  echo "  <ref_dir>      Directory with all the refence sub-directories"
+  echo "  <working_dir>  Directory containing sub-directories named fastqs, study_strains, and ref_strains"
   echo "  <config>       Tab-separated file listing each sample and strain tag," 
-  echo "                 as well as reference strain tags" 
+  echo "                 as well as reference strain tags (multi-strain only)" 
   echo "Options:"
-  echo "  -p [X]         Number of cores for parallel execution (default '16')"
-  echo "  -k [X]         Key strain: use strain's locus tag when no gene name is assigned"
+  echo "  -p [X]         Number of cores for parallel execution (default '4')"
+  echo "  -k [X]         Key strain: use strain's locus tag when no gene name is assigned (multi-strain only)"
   echo  
   printf "See ${UL}github.com/apredeus/multi-bacpipe${NC} for more information.\n"
   echo 
@@ -37,10 +39,10 @@ echo "==========================================================================
 echo "=================================================================================="
 echo "===                                                                            ==="
 echo "===                             Welcome to BACPIPE!                            ==="
-echo "===                       v0.2 - with multi-strain support                     ==="
-echo "===            2018  (c)  Alexander Predeus, Jay Hinton Lab, Liverpool         ==="
-echo "===  For more information, please visit https://github.com/apredeus/bacpipe    ==="
-echo "===                          Publication in preparation.                       ==="
+echo "===      Version 0.5.0 - with multi-strain and simple reference support        ==="
+echo "===          2018-19 (c)  Alexander Predeus, Jay Hinton Lab, Liverpool         ==="
+echo "===  For more information, visit https://github.com/apredeus/multi-bacpipe     ==="
+echo "===                        Publication in preparation.                         ==="
 echo "===                                                                            ==="
 echo "=================================================================================="
 echo "=================================================================================="
@@ -50,7 +52,7 @@ echo
 CPUS=""
 KEYSTR="" 
 PARAMS=""
-
+SIMPLE=false
 
 
 while (( "$#" )); do
@@ -74,6 +76,12 @@ while (( "$#" )); do
         exit 1 
       fi
       echo "==> Invoking -p option: parallel jobs will be run on $CPUS cores."
+      ;;  
+    --simple)
+      SIMPLE=true
+      shift 1
+      echo "==> Invoking --simple option: all samples will be mapped and quantified"
+      echo "    using the same reference genome and annotation." 
       ;;  
     --) # end argument parsing
       shift
@@ -107,8 +115,8 @@ fi
 
 if [[ $CPUS == "" ]]
 then 
-  echo "==> Parallel jobs will be ran on 16 cores (default)."
-  CPUS=16
+  echo "==> Parallel jobs will be ran on 4 cores (default)."
+  CPUS=4
 fi
 
 ############################################################
@@ -182,6 +190,10 @@ STRAND=`cat *.strand | awk '{sum+=$16} END {x=sum/NR; if (x<10) \
 if [[ $STRAND == "ERROR" ]]
 then
   echo "ERROR: something is very much off with the strand-specificity of your RNA-seq!"
+  echo "       This means that average strand-specificity of the dataset does not fall into"
+  echo "       one of the following intervals: [0%,10%), (45%,55%), or (90%,100%]."
+  echo "       This is very irregular; please investigate why is this happening using contents"
+  echo "       of <wdir>/strand and <wdir>/stats directories." 
   exit 1
 else 
   echo "The strandedness of your experiment was determined to be $STRAND"
