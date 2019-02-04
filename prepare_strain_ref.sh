@@ -1,31 +1,9 @@
 #!/bin/bash 
 
-##   v0.3 - streamlined to run as one-command prep
 ##   this script would generate everything in the working directory, which generally should be $WDIR/study_strains
 ##   no Prokka annotation of proteins - just find the CDS, Roary will do the rest. 
-##   no Rsem/kallisto - they don't work correctly anyway. 
 
 ## next snippet is adapted from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
-
-GRN='\033[1;32m'
-GRN2='\033[0;32m'
-RED='\033[1;31m'
-BL='\033[0;34m'
-NC='\033[0m' # No Color
-
-if [[ $# < 5 ]]
-then
-  echo 
-  printf "Step 1 of reference preparation: prepare reference for a single ${RED}study${NC} strain.\n"
-  echo "============================================================================="
-  printf "Usage: ${GRN}prepare_strain_ref.sh ${GRN2}<working_directory> <genome_fa> <prophage_bed> [-p CPUs]${NC}\n"
-  echo "       (to predict ncRNAs using Prokka's Rfam DB)"
-  echo "       - or - " 
-  printf "       ${GRN}prepare_strain_ref.sh ${GRN2}<working_directory> <genome_fa> <prophage_bed> [-p CPUs] [-r ref_ncRNA_fasta]${NC}\n"
-  echo "       (to assign ncRNAs by simply blasting the existing reference ncRNA fasta to the genome)"
-  echo 
-  exit 1
-fi
 
 PARAMS=""
 NC_REF=""
@@ -33,12 +11,12 @@ CPUS=""
 
 while (( "$#" )); do
   case "$1" in
-    -r|--ref_ncrna)
+    -r|--ref_fasta)
       NC_REF=$2
       shift 2
       if [[ $NC_REF == "" ]]
       then
-        echo "ERROR: -r flag requires a non-empty argument (reference ncRNA fasta file)!" 
+        echo "ERROR: -r flag requires a non-empty argument (reference ncRNA/CDS fasta file)!" 
         exit 1 
       fi
       ;;  
@@ -84,8 +62,8 @@ fi
 
 if [[ $CPUS == "" ]]
   then 
-  echo "==> Parallel jobs will be ran on 16 cores (default)."
-  CPUS=16
+  echo "==> Parallel jobs will be ran on 4 cores (default)."
+  CPUS=4
 fi
 
 
@@ -98,7 +76,8 @@ cp $FA $TAG.genome.fa
 samtools faidx $TAG.genome.fa
 cut -f 1,2 $TAG.genome.fa.fai > $TAG.chrom.sizes 
 
-## annotate with Prokka - either 
+## annotate with Prokka - either with Rfam for ncRNAs, or blasting & parsing extra genes from reference fasta: 
+ 
 if [[ $NC_REF == "" ]]
 then
   ## Rfam database here is OK, but still quite outdated. 
@@ -118,7 +97,7 @@ else
   echo "Running Prokka annotation; using --noanno option to only discover CDS."
   echo "Annotating noncoding RNAs using blastn and custom reference file $NC_REF!" 
  
-  ## find all CDS
+  ## find all CDS using Prodigal's default settings 
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} $TAG.genome.fa &> /dev/null 
   grep -P "\tCDS\t" $TAG.prokka/$TAG.prokka.gff | sed "s/$/;gene_biotype=protein_coding;/g" > $TAG.CDS.gff
   ## find all sORF and ncRNA
@@ -126,7 +105,7 @@ else
   blastn -query $NC_REF -db ${TAG}_blast -evalue 1 -task megablast -outfmt 6 > $TAG.ncRNA_blast.out 2> /dev/null 
 
   ## new version of this script drops all mia- sORFs overlapping a Prokka CDS 
-  make_ncRNA_gff_from_blast.pl $NC_REF $TAG.CDS.gff ${TAG%%_*} $TAG.ncRNA_blast.out > $TAG.ncRNA.gff
+  make_gff_from_ref_blast.pl $NC_REF $TAG.CDS.gff ${TAG%%_*} $TAG.ncRNA_blast.out > $TAG.ncRNA.gff
   
   ## note no --rfam option in this case  
   N_CDS=`grep -c -P "\tCDS\t" $TAG.CDS.gff`

@@ -10,8 +10,12 @@ then
   echo 
   printf "One-command reference preparation:\n" 
   printf "prepare multi-reference for all ${RED}study${NC} and ${GRN}reference${NC} strains listed in the config file.\n"
+  echo " - or - " 
+  printf "prepare simple reference using genome fasta and appropriately formatted GFF annotation.\n"
   echo "======================================================================================"
-  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> <config> [-p CPUs] [-r ref_ncRNA_fasta]${NC}\n"
+  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> <config> [-p CPUs] [-r ref_fasta]${NC}\n"
+  echo " - or - " 
+  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> --simple <genome_fa> <genome_gff> [-p CPUs]${NC}\n"
   echo 
   exit 1
 fi
@@ -19,24 +23,27 @@ fi
 PARAMS=""
 CPUS=""
 NC_REF="" 
+SIMPLE=false
+REF_FNA=""
+REF_GFF=""  
 
 while (( "$#" )); do
   case "$1" in
-    -r|--ref_ncrna)
+    -r|--ref_fasta)
       NC_REF=$2
       shift 2
       if [[ $NC_REF == "" ]]
       then
-        echo "ERROR: -r flag requires a non-empty argument (reference ncRNA fasta file)!" 
+        echo "ERROR: -r flag requires a non-empty argument (reference ncRNA/CDS fasta file)!" 
         exit 1
       fi
-      echo "==> Invoking -r option: annotation of ncRNA by blasting the reference ncRNA fasta to genome."
+      echo "==> Invoking -r option: annotation of extra ncRNA/CDS by blasting the reference fasta to genome."
       echo 
-      printf "${RED}If you are using a custom-made ncRNA fasta file, please make sure sequence names are correct.${NC}\n"
-      printf "${RED}They will be used as ncRNA gene names in the GTF file and the final expression table.${NC}\n"
+      printf "${RED}If you are using a custom-made ncRNA/CDS fasta file, please make sure that format is correct.${NC}\n"
+      printf "${RED}They will be used as ncRNA/CDS gene names and type in the GTF file and the final expression table.${NC}\n"
       echo 
       ;;
-    -p|--cpus)
+    -p)
       CPUS=$2
       shift 2
       if [[ $CPUS == "" ]]
@@ -45,6 +52,18 @@ while (( "$#" )); do
         exit 1
       fi
       echo "==> Invoking -p option: parallel jobs will be run on $CPUS cores."
+      ;;
+    --simple)
+      REF_FNA=$2
+      REF_GFF=$3 
+      SIMPLE=true
+      shift 3
+      if [[ $REF_FNA == "" || $REF_GFF == "" ]]
+      then
+        echo "ERROR: --simple flag requires 2 non-empty arguments (reference genome fasta and GFF annotation)!" 
+        exit 1
+      fi
+      echo "==> Invoking --simple option: using established reference genome sequence and GFF annotation."
       ;;
     --) # end argument parsing
       shift
