@@ -8,14 +8,14 @@ use strict;
 use warnings; 
 
 if ($#ARGV != 1) {
-  die "USAGE: ncbi_to_roary.pl <ncbi_gff> <ncbi_fna>\n";
+  die "USAGE: ncbi_to_roary.pl <ncbi_fna> <ncbi_gff>\n";
 }
 
-my $gff = shift @ARGV; 
 my $fna = shift @ARGV; 
+my $gff = shift @ARGV; 
 
-open GFF,"<",$gff or die "$!"; 
 open FNA,"<",$fna or die "$!"; 
+open GFF,"<",$gff or die "$!"; 
 
 my $cds_coord = {};
 my $cds_to_gene = {}; 

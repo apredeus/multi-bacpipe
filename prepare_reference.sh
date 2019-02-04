@@ -9,13 +9,12 @@ if [[ $# < 3 ]]
 then
   echo 
   printf "One-command reference preparation:\n" 
-  printf "prepare multi-reference for all ${RED}study${NC} and ${GRN}reference${NC} strains listed in the config file.\n"
+  printf "prepare multi-reference for all ${RED}study${NC} and ${GRN}reference${NC} strains listed in the config file, or\n"
+  printf "prepare simple reference using reference genome fasta and GFF annotation.\n"
+  echo "=========================================================================================="
+  printf "Usage: ${GRN}prepare_reference.sh ${GRN2}<working_directory> <config> [-p CPUs] [-r ref_fasta]${NC}\n"
   echo " - or - " 
-  printf "prepare simple reference using genome fasta and appropriately formatted GFF annotation.\n"
-  echo "======================================================================================"
-  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> <config> [-p CPUs] [-r ref_fasta]${NC}\n"
-  echo " - or - " 
-  printf "Usage: ${GRN}prepare_multiref.sh ${GRN2}<working_directory> --simple <genome_fa> <genome_gff> [-p CPUs]${NC}\n"
+  printf "Usage: ${GRN}prepare_reference.sh ${GRN2}<working_directory> --simple <genome_fa> <genome_gff> [-p CPUs]${NC}\n"
   echo 
   exit 1
 fi
