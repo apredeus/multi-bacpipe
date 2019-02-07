@@ -62,7 +62,7 @@ while (( "$#" )); do
       shift 2
       if [[ $KEYSTR == "" ]]
       then
-        echo "ERROR: -k flag requires a non-empty argument (Key strain ID)!" 
+        >&2 echo "ERROR: -k flag requires a non-empty argument (Key strain ID)!" 
         exit 1 
       fi
       echo "==> Invoking -k option: locus tags from key strain $KEYSTR will be used when common names are absent."
@@ -72,7 +72,7 @@ while (( "$#" )); do
       shift 2
       if [[ $CPUS == "" ]]
       then
-        echo "ERROR: -p flag requires a non-empty argument (number of CPUs)!" 
+        >&2 echo "ERROR: -p flag requires a non-empty argument (number of CPUs)!" 
         exit 1 
       fi
       echo "==> Invoking -p option: parallel jobs will be run on $CPUS cores."
@@ -88,7 +88,7 @@ while (( "$#" )); do
       break
       ;;  
     -*|--*=) # unsupported flags
-      echo "Error: Unsupported flag $1" >&2
+      >&2 echo "ERROR: Unsupported flag $1!"
       exit 1
       ;;  
     *) # preserve positional arguments

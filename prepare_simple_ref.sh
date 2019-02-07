@@ -15,7 +15,7 @@ while (( "$#" )); do
       shift 2
       if [[ $CPUS == "" ]]
       then
-        echo "ERROR: -p flag requires a non-empty argument (number of CPUs)!" 
+        echo "ERROR: -p flag requires a non-empty argument (number of CPUs)!" >&2 
         exit 1 
       fi
       echo "==> Invoking -p option: parallel jobs will be run on $CPUS cores."
@@ -25,7 +25,7 @@ while (( "$#" )); do
       break
       ;;  
     -*|--*=) # unsupported flags
-      echo "ERROR: unsupported flag $1" >&2
+      echo "ERROR: unsupported flag $1!" >&2
       exit 1
       ;;  
     *) # preserve positional arguments
