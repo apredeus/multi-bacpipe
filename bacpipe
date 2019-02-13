@@ -100,6 +100,9 @@ done
 eval set -- "$PARAMS"
 
 WDIR=$1
+## yes, I read stackoverflow! Thank you, Dave Dopson 
+## this is the dir where bacpipe is 
+SDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 CONFIG=$2
 
 ## replace simplified path with full path 
@@ -133,7 +136,7 @@ echo "==> ["`date +%H:%M:%S`"] Step 0: Checking configuration file and reference
 echo 
 cd $WDIR
 #TODO: this now fails if you don't delete all of the generated dirs; optimize behaviour  
-mbc_check_config.sh $WDIR $REFDIR $CONFIG
+$SDIR/script/check_config.sh $WDIR $REFDIR $CONFIG
 echo 
 echo "=================================================================================="
 echo
@@ -141,7 +144,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 1: Running FastQC."
 echo
 cd $WDIR/fastqs
-mbc_prun_fastqc.sh $WDIR $CPUS
+$SDIR/script/parallel_fastqc.sh $WDIR $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -149,7 +152,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 2: Running STAR alignment."
 echo
 cd $WDIR/fastqs 
-mbc_prun_star.sh $WDIR $REFDIR $CONFIG $CPUS
+$SDIR/script/parallel_star_align.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -157,7 +160,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files." 
 echo
 cd $WDIR/bams 
-mbc_prun_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
+$SDIR/script/parallel_calculate_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -165,7 +168,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 4: Running featureCounts on all possible strand settings."
 echo 
 cd $WDIR/bams 
-mbc_prun_strand.sh $WDIR $REFDIR $CONFIG $CPUS
+$SDIR/script/parallel_strand_quant.sh $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -173,7 +176,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 5: Calculating strandedness and other statistics."
 echo 
 cd $WDIR/fastqs 
-mbc_prun_stats.sh $WDIR $CONFIG $CPUS
+$SDIR/script/parallel_calculate_stats.sh $WDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -207,7 +210,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 6: Selecting the appropriate quantification approach."
 echo 
 cd $WDIR/bams 
-mbc_prun_fcount.sh $WDIR $REFDIR $CONFIG $CPUS $STRAND
+$SDIR/script/parallel_fcount_quant.sh $WDIR $REFDIR $CONFIG $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo
@@ -215,11 +218,12 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 7: Making final expression tables."
 echo 
 cd $WDIR/featureCounts 
-mbc_make_tables.sh $WDIR $CONFIG $KEYSTR
+$SDIR/script/make_tables.sh $WDIR $CONFIG $KEYSTR
 echo 
 echo "=================================================================================="
 echo
 
+## TODO: make GFF file using all the available utils 
 ## TODO: multiQC with appropriately formatted json!
 
 echo "==> ["`date +%H:%M:%S`"] ALL YOUR BASES ARE BELONG TO US!!!"

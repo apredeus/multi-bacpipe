@@ -15,7 +15,7 @@ cd $WDIR/fastqs
 for i in `seq 0 $((N-1))`
 do
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  mbc_calculate_stats.sh ${a[$i]} $WDIR ${b[$i]} &  
+  calculate_stats.sh ${a[$i]} $WDIR ${b[$i]} &  
 done
 wait
 

@@ -17,7 +17,7 @@ b=( $PP )
 for i in `seq 0 $((N-1))`
 do
   while [ $(jobs | wc -l) -ge $NJOB ] ; do sleep 5; done
-  mbc_star_align.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} 4 &
+  star_align.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} 4 &
 done
 wait
 

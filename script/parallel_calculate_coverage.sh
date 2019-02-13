@@ -18,7 +18,7 @@ cd $WDIR/bams
 for i in `seq 0 $((N-1))`
 do
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  mbc_calculate_coverage.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} &
+  calculate_coverage.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} &
 done
 wait
 

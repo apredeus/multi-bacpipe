@@ -15,7 +15,7 @@ cd $WDIR/featureCounts
 for i in *fc.tsv
 do
   TAG=${i%%.tsv}
-  mbc_fcount_tpm.pl $i > $TAG.tpm.tsv
+  fcount_tpm.pl $i > $TAG.tpm.tsv
 done 
 
 FC=`ls *.fc.tpm.tsv`

@@ -16,7 +16,7 @@ b=( $PP )
 for i in `seq 0 $((N-1))`
 do
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  mbc_strand_quant.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} &
+  strand_quant.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} &
 done
 wait
 
