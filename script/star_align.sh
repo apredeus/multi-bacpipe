@@ -23,7 +23,7 @@ then
 fi 
 
 cd $FQDIR
-mkdir ${TAG}_star
+mkdir -p ${TAG}_star
 cd ${TAG}_star
 
 if [[ -e $FQDIR/$TAG.fastq.gz ]]

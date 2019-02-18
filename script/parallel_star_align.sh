@@ -2,10 +2,12 @@
 
 ## PIPELINE VERSION
 
-WDIR=$1
-REFDIR=$2
-CONFIG=$3
-CPUS=$4
+SDIR=$1
+WDIR=$2
+REFDIR=$3
+CONFIG=$4
+CPUS=$5
+## TODO: adjustable number of cores dep on RAM/CPUs
 NJOB=$((CPUS/4))
 
 N=`grep -v "^Reference" $CONFIG | wc -l`
@@ -17,12 +19,12 @@ b=( $PP )
 for i in `seq 0 $((N-1))`
 do
   while [ $(jobs | wc -l) -ge $NJOB ] ; do sleep 5; done
-  star_align.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} 4 &
+  $SDIR/script/star_align.sh ${a[$i]} $WDIR $REFDIR ${b[$i]} 4 &
 done
 wait
 
 cd ../bams 
-mkdir logs
+mkdir -p logs
 mv ../fastqs/*_star/*bam .
 mv ../fastqs/*_star/*bam.bai . 
 mv ../fastqs/*_star/*.star.log logs 

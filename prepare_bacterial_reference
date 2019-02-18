@@ -1,0 +1,274 @@
+#!/bin/bash 
+
+source activate roary 
+set -euo pipefail
+
+GRN='\033[1;32m'
+GRN2='\033[0;32m'
+RED='\033[1;31m'
+NC='\033[0m' # No Color
+
+if [[ $# < 3 ]]
+then
+  echo 
+  printf "Synopsis: One-command bacterial RNA-Seq reference preparation:\n"
+  echo 
+  printf "prepare multi-reference for all ${RED}study${NC} and ${GRN}reference${NC} strains listed in the config file, or\n"
+  printf "prepare simple reference using reference genome fasta and GFF annotation.\n"
+  echo 
+  echo "=========================================================================================="
+  echo 
+  printf "Usage: ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs] [-r <fasta.fa>]${NC}\n"
+  echo   "         - to use reference ncRNA/extra CDS fasta file (see below), or" 
+  printf "       ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs] [-r prokka]${NC}\n"
+  echo   "         - to use Prokka to predict non-coding RNAs, or "
+  printf "       ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs]${NC}\n"
+  echo   "         - to completely ignore non-coding RNAs, or "
+  printf "       ${GRN}prepare_bacterial_reference ${GRN2}--simple <working_directory>  <tag>   [-p CPUs]${NC}\n"
+  echo   "         - to use simple workflow with one reference genome FNA/GFF"
+  echo 
+  echo "Positional arguments:"
+  echo "  <working_dir>  Directory containing sub-directories named fastqs, study_strains, and ref_strains"
+  echo "  <config>       (multi-strain only) Tab-separated file listing each sample and strain tag," 
+  echo "                 as well as reference strain tags"
+  echo "  <tag>          (single-strain only) Strain tag for the study strain"
+  echo 
+  echo "Options:"
+  echo "  -p [X]         Number of cores for parallel execution (default '4')"
+  echo "  -r [X]         (multi-strain only) Additional reference nucleotide sequences to be added to the final annotation via Blastn"
+  echo "                 If -r prokka is selected, ncRNAs would be predicted using Rfam functionality in Prokka"
+  echo "                 If an external fasta file is provided, each sequence should be named using ><name>.<type> convention"
+  echo "                 Types can be \"CDS\" or \"ncRNA\" - e.g. >RygC.ncRNA, or >trpL.CDS"
+  echo  
+  echo 
+  exit 1
+fi
+
+WDIR=""
+CONFIG="" 
+TAG=""
+CPUS=""
+REF=""
+SIMPLE=false
+MULTI=false 
+
+! getopt --test > /dev/null
+if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
+    >&2 echo "ERROR: \"getopt --test\" failed in this environment"
+    >&2 echo "Please make sure you have the most up-to-date version of getopt!" 
+    exit 1
+fi
+
+! PARSED=$(getopt --options=p:r: --longoptions=simple,multi --name "$0" -- "$@")
+if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+  exit 2
+fi
+
+# read getopt’s output this way to handle the quoting right:
+eval set -- "$PARSED"
+
+while true; do
+    case "$1" in
+        -r)
+            REF="$2" 
+            shift 2
+            ;;
+        -p)
+            CPUS="$2"
+            shift 2
+            ;;
+        --simple)
+            SIMPLE=true
+            shift 
+            ;;
+        --multi)
+            MULTI=true
+            shift 
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Programming error"
+            exit 3
+            ;;
+    esac
+done
+
+###################################################################
+#### some sanity checks now 
+#####################################3
+
+if $MULTI
+then
+  WDIR=$1
+  CONFIG=$2
+  echo "==> Intiating multi-strain workflow! Working directory is $WDIR, config file is $CONFIG"
+elif $SIMPLE 
+then
+  WDIR=$1
+  TAG=$2
+  echo "==> Intiating single-strain workflow! Working directory is $WDIR, strain tag is $TAG"
+else 
+  >&2 echo "ERROR: please set either --simple or --multi option!"
+  exit 1
+fi 
+
+echo "WDIR: $WDIR Config: $CONFIG tag: $TAG Ref: $REF Cores: $CPUS Simple: $SIMPLE Multi: $MULTI"
+
+if [[ $WDIR == "" || ! -d $WDIR ]]
+then 
+  >&2 echo "ERROR: you must identify an extisting working directory!" 
+  exit 1 
+fi 
+
+WDIR=`readlink -f $WDIR`
+
+if [[ $CONFIG == "" && $TAG == "" ]] 
+then
+  >&2 echo "ERROR: please provide config file (for --multi) or strain tag (for --simple)!"
+  exit 1
+fi
+
+if [[ $CPUS == "" ]]
+then
+  echo "==> Parallel jobs will be ran on 4 cores (default)."
+  CPUS=4
+else 
+  echo "==> Parallel jobs will be ran on $CPUS cores."
+fi
+
+if [[ $REF != "" && $SIMPLE == "true" ]]
+then 
+  >&2 echo "ERROR: reference option can only be set for --multi workflow!"
+  exit 1
+fi 
+
+SDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+
+###################################################################################
+###                                                                             ###  
+###             arguments are set and checked, let's make ref files!            ###
+###                                                                             ###  
+###################################################################################
+
+if [[ $SIMPLE == "false" ]]
+then
+  ## case 1: make multi-strain reference using Roary
+  ## config file has to be in $WDIR; throw an error otherwise 
+  CONFIG=`basename $CONFIG`
+  
+  if [[ ! -s $WDIR/$CONFIG ]]
+  then
+    >&2 echo "ERROR: Config file must be located in the working directory!" 
+    exit 1 
+  fi
+  
+  ## TODO: check if $STUDY and $REFSTR come up non-empty
+  ## TODO: check if all works with Rfam workflow (names don't get extracted)  
+  
+  STUDY=`grep -v "^Reference" $WDIR/$CONFIG | cut -f 2 | sort | uniq`
+  REFSTR=`grep   "^Reference" $WDIR/$CONFIG | cut -f 2 | sort | uniq`
+  
+  echo -e "Following study strains will be processed:\n\n$STUDY\n"
+  echo -e "Following reference strains will be processed:\n\n$REFSTR\n"
+  
+  
+  ## prepare individual strain references for each study strain
+  ## you have to have a genome file and prophage file in place 
+  
+  cd $WDIR/study_strains
+  
+  if [[ $REF == "" ]]
+  then
+    for i in $STUDY
+    do
+      $SDIR/script/prepare_strain_ref.sh $SDIR $WDIR $i $CPUS
+    done 
+  else 
+    for i in $STUDY 
+    do
+      $SDIR/script/prepare_strain_ref.sh $SDIR $WDIR $i $CPUS $REF
+    done
+  fi
+  
+  ## now check if that all worked out OK 
+  for i in $STUDY
+  do
+    $SDIR/script/ref_check_study_dir.sh $WDIR $i
+  done  
+  echo
+  echo "ALL STUDY STRAIN FILES AND DIRS ARE OK!"  
+  echo
+  
+  cd $WDIR/ref_strains
+  
+  ## check if reference strain GTF files in refstr are in Roary-friendly format (e.g. all NCBI files were cleaned up). 
+  ## reqs: 1) unique IDs that are locus tags; 2) no names that are equal to ID; 3) only CDS features; 4) ##FASTA and genomic fa are present. 
+  
+  for i in $REFSTR
+  do
+    $SDIR/script/ref_check_roary_gff.sh $WDIR $i
+  done 
+  echo
+  echo "ALL REFERENCE STRAIN GFF FILES ARE OK!"  
+  echo
+  
+  ## make study strain GFF to run roary 
+  for i in $STUDY
+  do
+    cat $WDIR/study_strains/$i/$i.CDS.gff   >  0_$i.roary.gff
+    echo "##FASTA"                          >> 0_$i.roary.gff
+    cat $WDIR/study_strains/$i/$i.genome.fa >> 0_$i.roary.gff
+  done 
+  
+  ## run Roary on all the strains present in the refstr
+  
+  echo "==> Running Roary on all strains, using $CPUS cores..."
+  roary -p $CPUS -v -e -f roary *.gff &> roary.log
+  rm 0*.roary.gff
+  mv roary roary.log $WDIR
+  
+  ## edit the presence-absence file. You should have dos2unix in your $PATH
+  
+  echo "==> Roary pan-genome analysis is done! Performing some post-processing..."
+  cd $WDIR/roary 
+  $SDIR/utils/dos2unix gene_presence_absence.csv
+  sed '1 s/.roary//g' gene_presence_absence.csv | sed '1 s/0_//g' > gene_presence_absence.csv.tmp 
+  mv gene_presence_absence.csv.tmp gene_presence_absence.csv
+  
+  ## make annotated CDS and ncRNA tables
+  ## we will use blast output files for all study & reference strains 
+  cd $WDIR
+  echo "==> Generating a table of CDS orthologs."
+  $SDIR/script/create_orthology_table.pl $WDIR > annotated_CDS.tsv
+  
+  
+  ## TODO: print stats - how many genes are common for all study strains, how many are unique, how many are seen in 2 and more strains.
+  
+  echo "==> DONE generating multi-strain reference!" 
+else 
+  ## case 2: simple prep
+  cd $WDIR/study_strains 
+  $SDIR/script/prepare_simple_ref.sh $SDIR $WDIR $TAG $CPUS 
+
+  $SDIR/script/ref_check_study_dir.sh $WDIR $TAG
+
+  cd $WDIR/fastqs 
+  echo "==> Writing simple config file, simple.cfg"
+  KK=`for i in *fastq.gz
+  do 
+    TAG1=${i%%.fastq.gz}
+    TAG2=${TAG1%%.R?}
+    echo $TAG2
+  done | sort | uniq`
+  
+  cd $WDIR
+  for i in $KK
+  do 
+    echo -e "$i\t$TAG"
+  done > simple.cfg
+  echo "==> DONE generating simple single-strain reference!" 
+fi 

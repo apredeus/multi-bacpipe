@@ -1,17 +1,22 @@
 #!/usr/bin/env perl 
 
 ## take two GFF files, Prokka & ncRNA 
-## return rRNA operons and singleton tRNAs as BED intervals 
+## return rRNA operons and singleton tRNAs as BED intervals
+## operon is extended until 50 bp before nearest non-rRNA/non-tRNA feature  
 
 use strict; 
 use warnings; 
 #use Data::Dumper; 
 
+if ($#ARGV != 1) {
+  die "USAGE: make_rrna_operon.pl <prokka_gff> <gene_gff>\n";
+}
+
 my $prokka_gff = shift @ARGV; 
-my $ncrna_gff  = shift @ARGV; 
+my $gene_gff   = shift @ARGV; 
 
 open PRKGFF,"<",$prokka_gff or die "$!"; 
-open NCRGFF,"<",$ncrna_gff or die "$!"; 
+open GENGFF,"<",$gene_gff or die "$!"; 
 
 my $gene = {}; ## 
 my $crispr_count = 1; 
@@ -50,15 +55,18 @@ while (<PRKGFF>) {
   } 
 }
 
-while (<NCRGFF>) { 
+while (<GENGFF>) { 
   chomp; 
   my @tt = split /\t+/; 
   $tt[8] =~ m/ID=(.*?);/;
   my $id = $1;
-  $gene->{$id}->{chr} = $tt[0];
-  $gene->{$id}->{beg} = $tt[3]-1;
-  $gene->{$id}->{end} = $tt[4];
-  $gene->{$id}->{type} = "ncRNA";
+  if ($tt[8] !~ m/gene_biotype=rRNA;/ && $tt[8] !~ m/gene_biotype=tRNA;/) { 
+    $tt[8] =~ m/gene_biotype=(.*?);/;
+    $gene->{$id}->{chr} = $tt[0];
+    $gene->{$id}->{beg} = $tt[3]-1;
+    $gene->{$id}->{end} = $tt[4];
+    $gene->{$id}->{type} = $1;
+  }  
 }
 
 ## print Dumper $gene; 
@@ -93,4 +101,4 @@ foreach my $key (keys %{$gene}) {
 } 
 
 close PRKGFF; 
-close NCRGFF; 
+close GENGFF; 

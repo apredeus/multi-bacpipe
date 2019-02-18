@@ -30,6 +30,6 @@ fi
 ## note that you ABSOLUTELY have to have $PAIRED set correctly 
 ## otherwise a strand-specific PE library would look EXACTLY like a non-specific SE! 
  
-featureCounts $PAIRED -M --fraction -t gene -g ID -s 0 -a $REF -o $TAG.fc.s0.tsv $TAG.bam &> $TAG.fc.s0.log
-featureCounts $PAIRED -M --fraction -t gene -g ID -s 1 -a $REF -o $TAG.fc.s1.tsv $TAG.bam &> $TAG.fc.s1.log
-featureCounts $PAIRED -M --fraction -t gene -g ID -s 2 -a $REF -o $TAG.fc.s2.tsv $TAG.bam &> $TAG.fc.s2.log
+featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 0 -a $REF -o $TAG.fc.s0.tsv $TAG.bam &> $TAG.fc.s0.log
+featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 1 -a $REF -o $TAG.fc.s1.tsv $TAG.bam &> $TAG.fc.s1.log
+featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 2 -a $REF -o $TAG.fc.s2.tsv $TAG.bam &> $TAG.fc.s2.log

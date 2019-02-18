@@ -1,5 +1,7 @@
 #!/bin/bash 
 
+set -euo pipefail
+
 ## This is the master script for the bacterial RNA-seq processing pipeline. 
 ## It reports the master log, determines if it's OK to proceed, and calls all the sub-scripts. 
 ## Computationally challenging tasks are parallelized; Parallel wrappers 
@@ -10,25 +12,23 @@ GRN2='\033[0;32m'
 UL='\033[4;34m'
 NC='\033[0m' # No Color
 
-if [[ $# < 3 ]] 
+if [[ $# < 2 ]] 
 then
   echo
   echo "Version:"
-  echo "  v0.5.0, Alexander Predeus (predeus@gmail.com), 2018" 
+  echo "  v0.6.0, Alexander Predeus (predeus@gmail.com), 2019" 
   echo "Synopsis:"
-  echo "  Process multistrain bacterial RNA-seq data using pre-created reference"
-  echo "Usage - multi-strain processing:" 
+  echo "  Process multistrain bacterial RNA-seq data using pre-created reference."
+  echo "Usage:" 
   printf "  ${GRN}bacpipe${NC} ${GRN2}<working_directory> <config> [-p CPUs] [-k key_strain]${NC}\n"
-  echo "Usage - single strain with established genome/annotation:" 
-  printf "  ${GRN}bacpipe${NC} ${GRN2}<working_directory> --simple [-p CPUs]${NC}\n"
   echo 
   echo "Positional arguments:"
   echo "  <working_dir>  Directory containing sub-directories named fastqs, study_strains, and ref_strains"
   echo "  <config>       Tab-separated file listing each sample and strain tag," 
-  echo "                 as well as reference strain tags (multi-strain only)" 
+  echo "                 as well as reference strain tags (in case of multi-strain processing)" 
   echo "Options:"
   echo "  -p [X]         Number of cores for parallel execution (default '4')"
-  echo "  -k [X]         Key strain: use strain's locus tag when no gene name is assigned (multi-strain only)"
+  echo "  -k [X]         (multi-strain only) Key strain: use strain's locus tag when no gene name is assigned"
   echo  
   printf "See ${UL}github.com/apredeus/multi-bacpipe${NC} for more information.\n"
   echo 
@@ -39,7 +39,7 @@ echo "==========================================================================
 echo "=================================================================================="
 echo "===                                                                            ==="
 echo "===                             Welcome to BACPIPE!                            ==="
-echo "===      Version 0.5.0 - with multi-strain and simple reference support        ==="
+echo "===      Version 0.6.0 - with multi-strain and simple reference support        ==="
 echo "===          2018-19 (c)  Alexander Predeus, Jay Hinton Lab, Liverpool         ==="
 echo "===  For more information, visit https://github.com/apredeus/multi-bacpipe     ==="
 echo "===                        Publication in preparation.                         ==="
@@ -49,82 +49,93 @@ echo "==========================================================================
 echo
 echo
 
+WDIR=""
+CONFIG="" 
 CPUS=""
-KEYSTR="" 
-PARAMS=""
-SIMPLE=false
+KEYSTR=""
 
+! getopt --test > /dev/null
+if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
+    >&2 echo "ERROR: \"getopt --test\" failed in this environment"
+    >&2 echo "Please make sure you have the most up-to-date version of getopt!" 
+    exit 1
+fi
 
-while (( "$#" )); do
-  case "$1" in
-    -k)
-      KEYSTR=$2
-      shift 2
-      if [[ $KEYSTR == "" ]]
-      then
-        >&2 echo "ERROR: -k flag requires a non-empty argument (Key strain ID)!" 
-        exit 1 
-      fi
-      echo "==> Invoking -k option: locus tags from key strain $KEYSTR will be used when common names are absent."
-      ;;  
-    -p)
-      CPUS=$2
-      shift 2
-      if [[ $CPUS == "" ]]
-      then
-        >&2 echo "ERROR: -p flag requires a non-empty argument (number of CPUs)!" 
-        exit 1 
-      fi
-      echo "==> Invoking -p option: parallel jobs will be run on $CPUS cores."
-      ;;  
-    --simple)
-      SIMPLE=true
-      shift 1
-      echo "==> Invoking --simple option: all samples will be mapped and quantified"
-      echo "    using the same reference genome and annotation." 
-      ;;  
-    --) # end argument parsing
-      shift
-      break
-      ;;  
-    -*|--*=) # unsupported flags
-      >&2 echo "ERROR: Unsupported flag $1!"
-      exit 1
-      ;;  
-    *) # preserve positional arguments
-      PARAMS="$PARAMS $1"
-      shift
-      ;;  
-  esac
+! PARSED=$(getopt --options=p:k: --name "$0" -- "$@")
+if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+  exit 2
+fi
+
+# read getopt’s output this way to handle the quoting right:
+eval set -- "$PARSED"
+
+while true; do
+    case "$1" in
+        -k)
+            KEYSTR="$2" 
+            shift 2
+            ;;
+        -p)
+            CPUS="$2"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Programming error"
+            exit 3
+            ;;
+    esac
 done
-eval set -- "$PARAMS"
 
 WDIR=$1
-## yes, I read stackoverflow! Thank you, Dave Dopson 
-## this is the dir where bacpipe is 
-SDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 CONFIG=$2
-
-## replace simplified path with full path 
 WDIR=`readlink -f $WDIR`
 CONFIG=`readlink -f $CONFIG`
 REFDIR=$WDIR/study_strains
 
+SDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 if [[ $WDIR == "" || $CONFIG == "" || ! -d $REFDIR || ! "$(ls -A $REFDIR)" ]]
 then
-  echo "ERROR: You must specify a non-empty reference directory and config file!"
+  >&2 echo "ERROR: You must specify a non-empty working directory and appropriate config file!"
   exit 1  
 fi  
 
 if [[ $CPUS == "" ]]
 then 
-  echo "==> Parallel jobs will be ran on 4 cores (default)."
+  echo "==> Parallel jobs will be ran on 4 cores (default)"
   CPUS=4
+else 
+  echo "==> Parallel jobs will be ran on $CPUS cores"
+fi
+  
+MULTI=`grep -c "^Reference" $CONFIG || true`
+if [[ $MULTI != 0 ]] 
+then 
+  echo "==> Initiating bacpipe run using MULTI-STRAIN workflow!"  
+  echo "==> Following variables were set:"
+  echo "    - WDIR: $WDIR"
+  echo "    - SDIR: $SDIR"
+  echo "  - CONFIG: $CONFIG"
+  echo "    - CPUS: $CPUS"
+  echo "  - KEYSTR: $KEYSTR"
+else 
+  echo "==> Initiating bacpipe run using SINGLE STRAIN workflow!"  
+  echo "==> Following variables were set:"
+  echo "    - WDIR: $WDIR"
+  echo "    - SDIR: $SDIR"
+  echo "  - CONFIG: $CONFIG"
+  echo "    - CPUS: $CPUS"
 fi
 
-############################################################
-
-set -euo pipefail
+##########################################################################################
+###                                                                                    ###
+###         all the parameters are set, all sanity checks done, let's roll!            ###
+###                                                                                    ### 
+##########################################################################################
 
 cd $WDIR 
 
@@ -135,8 +146,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 0: Checking configuration file and reference availability."
 echo 
 cd $WDIR
-#TODO: this now fails if you don't delete all of the generated dirs; optimize behaviour  
-$SDIR/script/check_config.sh $WDIR $REFDIR $CONFIG
+$SDIR/script/check_config.sh $WDIR $CONFIG
 echo 
 echo "=================================================================================="
 echo
@@ -152,7 +162,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 2: Running STAR alignment."
 echo
 cd $WDIR/fastqs 
-$SDIR/script/parallel_star_align.sh $WDIR $REFDIR $CONFIG $CPUS
+$SDIR/script/parallel_star_align.sh $SDIR $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -160,7 +170,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 3: Making TDF and strand-specific bigWig files." 
 echo
 cd $WDIR/bams 
-$SDIR/script/parallel_calculate_coverage.sh $WDIR $REFDIR $CONFIG $CPUS
+$SDIR/script/parallel_calculate_coverage.sh $SDIR $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -168,7 +178,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 4: Running featureCounts on all possible strand settings."
 echo 
 cd $WDIR/bams 
-$SDIR/script/parallel_strand_quant.sh $WDIR $REFDIR $CONFIG $CPUS
+$SDIR/script/parallel_strand_quant.sh $SDIR $WDIR $REFDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -176,7 +186,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 5: Calculating strandedness and other statistics."
 echo 
 cd $WDIR/fastqs 
-$SDIR/script/parallel_calculate_stats.sh $WDIR $CONFIG $CPUS
+$SDIR/script/parallel_calculate_stats.sh $SDIR $WDIR $CONFIG $CPUS
 echo 
 echo "=================================================================================="
 echo
@@ -210,7 +220,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 6: Selecting the appropriate quantification approach."
 echo 
 cd $WDIR/bams 
-$SDIR/script/parallel_fcount_quant.sh $WDIR $REFDIR $CONFIG $CPUS $STRAND
+$SDIR/script/parallel_fcount_quant.sh $SDIR $WDIR $REFDIR $CONFIG $CPUS $STRAND
 echo 
 echo "=================================================================================="
 echo
@@ -218,7 +228,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 7: Making final expression tables."
 echo 
 cd $WDIR/featureCounts 
-$SDIR/script/make_tables.sh $WDIR $CONFIG $KEYSTR
+$SDIR/script/make_tables.sh $SDIR $WDIR $CONFIG $KEYSTR
 echo 
 echo "=================================================================================="
 echo

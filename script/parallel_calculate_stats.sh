@@ -1,8 +1,9 @@
 #!/bin/bash 
 
-WDIR=$1
-CONFIG=$2
-CPUS=$3
+SDIR=$1
+WDIR=$2
+CONFIG=$3
+CPUS=$4
 
 N=`grep -v "^Reference" $CONFIG | wc -l`
 KK=`grep -v "^Reference" $CONFIG | cut -f 1`
@@ -15,7 +16,7 @@ cd $WDIR/fastqs
 for i in `seq 0 $((N-1))`
 do
   while [ $(jobs | wc -l) -ge $CPUS ] ; do sleep 5; done
-  calculate_stats.sh ${a[$i]} $WDIR ${b[$i]} &  
+  $SDIR/script/calculate_stats.sh ${a[$i]} $WDIR ${b[$i]} &  
 done
 wait
 

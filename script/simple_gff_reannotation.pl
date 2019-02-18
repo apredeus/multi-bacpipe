@@ -10,11 +10,11 @@ use strict;
 use warnings; 
 
 if ($#ARGV != 1) {
-  die "USAGE: simple_gff_reannotation.pl <ncbi_gff> <tag>\n";
+  die "USAGE: simple_gff_reannotation.pl <tag> <ncbi_gff>\n";
 }
 
-my $gff = shift @ARGV; 
 my $tag = shift @ARGV; 
+my $gff = shift @ARGV; 
 
 open GFF,"<",$gff or die "$!"; 
 open GENE,">","$tag.gene.gff" or die "$!"; 
