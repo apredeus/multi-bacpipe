@@ -7,6 +7,8 @@ cd $WDIR/study_strains/$TAG
 
 echo "==> Checking study strain $TAG:"
 
+## note that $TAG.prophage.bed is optional 
+
 if [[ -s $TAG.gene.gff && -s $TAG.chrom.sizes && -s $TAG.genome.fa && -s $TAG.genome.fa.fai && \
 -s $TAG.rRNA.bed && "$(ls -A ${TAG}.STAR)" ]]
 then

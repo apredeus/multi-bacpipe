@@ -8,16 +8,15 @@
 
 set -euo pipefail
 
-WDIR=$1
-CONFIG=$2
+SDIR=$1
+WDIR=$2
+CONFIG=$3
 MULTI="" 
 
 cd $WDIR
 
 ## this prevents pipefail from stopping script execution on grep coming up with nothing
 MULTI=`grep -c "^Reference" $CONFIG || true`
-
-echo "DEBUG2: $WDIR $CONFIG $MULTI" 
 
 if [[ -d fastqs && "$(ls -A fastqs)" ]]
 then
@@ -37,9 +36,48 @@ then
     >&2 echo "ERROR: directory roary does not exist or is empty! Please make sure you've ran \"prepare_bacterial_reference\" on your config file."
     exit 1
   fi
-  ## TODO: add same checks as in prepare_bacpipe_reference
+
+  STUDY=`grep -v "^Reference" $CONFIG | cut -f 2 | sort | uniq`
+  REFSTR=`grep   "^Reference" $CONFIG | cut -f 2 | sort | uniq`
+
+  echo -e "Following study strains are found:\n\n$STUDY\n"
+  echo -e "Following reference strains are found:\n\n$REFSTR\n"
+
+  ## let's check again if our study strains check out  
+  for i in $STUDY
+  do
+    $SDIR/script/ref_check_study_dir.sh $WDIR $i
+  done
+  echo
+  echo "ALL STUDY STRAIN FILES AND DIRS ARE OK!"  
+  echo
+
+  cd $WDIR/ref_strains
+
+  ## check if reference strain GTF files in refstr are in Roary-friendly format (e.g. all NCBI files were cleaned up). 
+  ## reqs: 1) unique IDs that are locus tags; 2) no names that are equal to ID; 3) only CDS features; 4) ##FASTA and genomic fa are present. 
+
+  for i in $REFSTR
+  do
+    $SDIR/script/ref_check_roary_gff.sh $WDIR $i
+  done
+  echo
+  echo "ALL REFERENCE STRAIN GFF FILES ARE OK!"  
+  echo
+
+
 else 
-  echo "==> Processing workflow: SINGLE STRAIN. Continuing.."
+  echo "==> Processing workflow: SIMPLE SINGLE-STRAIN. Continuing.."
+  TAG=`cut -f 2 $CONFIG | uniq`
+
+  echo -e "Following study strain is found:\n\n$TAG\n"
+
+  ## let's check again if our study strains check out  
+  $SDIR/script/ref_check_study_dir.sh $WDIR $TAG
+
+  echo
+  echo "STUDY STRAIN FILES AND DIRS ARE OK!"  
+  echo
 fi 
 
 if [[ ! -d bams || ! -d stats || ! -d strand || ! -d tdfs_and_bws || ! -d featureCounts || ! -d FastQC || ! -d exp_tables  ]]  

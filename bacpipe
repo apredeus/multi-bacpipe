@@ -146,7 +146,7 @@ echo
 echo "==> ["`date +%H:%M:%S`"] Step 0: Checking configuration file and reference availability."
 echo 
 cd $WDIR
-$SDIR/script/check_config.sh $WDIR $CONFIG
+$SDIR/script/check_config.sh $SDIR $WDIR $CONFIG
 echo 
 echo "=================================================================================="
 echo
