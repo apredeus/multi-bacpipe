@@ -50,4 +50,4 @@ else
   echo "==> All the necessary directories found, continuing." 
 fi
 
-echo "ALL DIRECTORY TESTING HAS PASSED SUCCESSFULLY!"
+echo "ALL DIRECTORY TESTING WAS PASSED SUCCESSFULLY!"
