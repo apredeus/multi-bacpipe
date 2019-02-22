@@ -1,5 +1,6 @@
 #!/bin/bash 
 
+## this is ran in <wdir>/study_strains
 source activate prokka 
 set -euo pipefail
 
@@ -53,7 +54,9 @@ fi
 if [[ $REF == "" ]]
 then
   ## Rfam database here is OK, but still quite outdated. 
-  ## It finds about 200 ncRNAs for average Salmonella; there are about 280 annotated right now.  
+  ## It finds about 200 ncRNAs for average Salmonella; there are about 280 annotated right now. 
+  ## Probably does a lot worse for less sequenced/studied organisms
+ 
   echo "Running Prokka annotation; using --noanno option to only discover CDS"
   echo "Annotating noncoding RNAs using default Prokka Rfam database!" 
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} --rfam $TAG.genome.fa &> /dev/null 
@@ -67,30 +70,30 @@ then
 else 
   ## Make sure you have correct ncRNA names in the reference fasta - they will be used as a Name in GFF. 
   echo "Running Prokka annotation; using --noanno option to only discover CDS."
-  echo "Annotating noncoding RNAs using blastn and custom reference file $REF!" 
  
   ## find all CDS using Prodigal's default settings - no Rfam search here 
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} $TAG.genome.fa &> /dev/null 
-  grep -P "\tCDS\t" $TAG.prokka/$TAG.prokka.gff | sed "s/$/;gene_biotype=protein_coding;/g" > $TAG.CDS.gff
-  ## find all sORF and ncRNA
-  makeblastdb -dbtype nucl -in $TAG.genome.fa -out ${TAG}_blast &> /dev/null 
-  blastn -query $NC_REF -db ${TAG}_blast -evalue 1 -task megablast -outfmt 6 > $TAG.ncRNA_blast.out 2> /dev/null 
 
-  ## new version of this script drops all mia- sORFs overlapping a Prokka CDS 
-  $SDIR/script/make_gff_from_ref_blast.pl $NC_REF $TAG.CDS.gff ${TAG%%_*} $TAG.ncRNA_blast.out > $TAG.ncRNA.gff
+  makeblastdb -dbtype nucl -in $TAG.genome.fa -out ${TAG}_blast &> /dev/null 
+  blastn -query $REF -db ${TAG}_blast -evalue 1 -task megablast -outfmt 6 > $TAG.ref_blast.out 2> /dev/null 
+
+  ## starting with v0.6 this gets all new locus tags 
+  $SDIR/script/unify_study_gff.pl $TAG.prokka/$TAG.prokka.gff $TAG.ref_blast.out $REF $TAG
+  grep -P "\tCDS\t"   $TAG.united.gff > $TAG.CDS.gff
+  grep -P "\tncRNA\t" $TAG.united.gff > $TAG.ncRNA.gff
   
-  N_CDS=`grep -c -P "\tCDS\t" $TAG.CDS.gff`
-  N_NCR=`wc -l $TAG.ncRNA.gff | awk '{print $1}'`
+  N_CDS=`grep -c -P "\tCDS\t" $TAG.united.gff`
+  N_NCR=`grep -c -P "\tncRNA\t" $TAG.united.gff`
   echo
   echo "==> Found $N_CDS protein-coding (CDS) and $N_NCR non-coding RNA (misc_RNA/ncRNA) features."
   echo
-  rm ${TAG}_blast.n* $TAG.ncRNA_blast.out
-fi 
+  rm ${TAG}_blast.n*
+fi
+ 
+## we need this format for featureCounts quant
+perl -ne 's/\tCDS\t|\tCRISPR\t|\tncRNA\t|\trRNA\t|\ttRNA\t/\tgene\t/g; print' $TAG.united.gff > $TAG.gene.gff
 
-sed "s/\tCDS\t/\tgene\t/g"   $TAG.CDS.gff   >  $TAG.gene.gff
-sed "s/\tncRNA\t/\tgene\t/g" $TAG.ncRNA.gff >> $TAG.gene.gff
-
-echo "==> Files $TAG.genome.fa, $TAG.CDS.gff, $TAG.ncRNA.gff, and $TAG.gene.gff successfully generated"
+echo "==> Files $TAG.genome.fa, $TAG.united.gff, and $TAG.gene.gff successfully generated"
 
 ## make STAR reference for small genome size
 
@@ -104,14 +107,18 @@ mv Log.out $TAG.star.log
 echo "==> STAR aligner index $TAG.STAR successfully generated"
 
 ##make rRNA/tRNA interval file  
-$SDIR/script/make_rrna_operon.pl $TAG.prokka/$TAG.prokka.gff $TAG.ncRNA.gff | sort -k1,1 -k2,2n | bedtools merge -i - > $TAG.rRNA.bed
+echo "Making combined rRNA operon interval file.."
+$SDIR/script/make_rrna_operon.pl $TAG.united.gff | sort -k1,1 -k2,2n | bedtools merge -i - > $TAG.rRNA.bed
+N_INT=`wc -l $TAG.rRNA.bed | awk '{print $1}'`
+N_OP=`awk '$3-$2>3000' $TAG.rRNA.bed | wc -l`
+echo "==> Identified $N_OP rRNA operons, $N_INT intervals overall." 
 
 ## mv all to the ref dir 
-mv $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $WDIR/study_strains/$TAG
-mv $TAG.gene.gff $TAG.CDS.gff $TAG.ncRNA.gff $WDIR/study_strains/$TAG
+mv $TAG.gene.gff $TAG.united.gff $TAG.CDS.gff $TAG.ncRNA.gff $WDIR/study_strains/$TAG || : ## hope you are as confused as I was, lol 
+cp $PROPHAGE $WDIR/study_strains/$TAG/$TAG.prophage.bed || : 
+mv $TAG.match.tsv $TAG.ref_blast.out $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $WDIR/study_strains/$TAG
 mv $TAG.prokka ${TAG}.STAR $TAG.star.log $WDIR/study_strains/$TAG
-cp $PROPHAGE $WDIR/study_strains/$TAG/$TAG.prophage.bed
 mv $TAG.rRNA.bed $WDIR/study_strains/$TAG
 
 echo "==> All the generated files and indexes have been moved to $WDIR/study_strains/$TAG."
-echo "==> Strain $TAG: all done generating reference!" 
+echo "==> Strain $TAG: all reference files successfully generated!" 

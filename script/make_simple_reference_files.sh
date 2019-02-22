@@ -41,7 +41,7 @@ fi
 prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} $TAG.genome.fa &> /dev/null 
 
 ## this will write $TAG.CDS.gff and $TAG.ncRNA.gff with all the correct attributes, and account for tmRNA, misc_RNA etc
-$SDIR/script/simple_gff_reannotation.pl $TAG $TAG.gff
+$SDIR/script/simple_gff_cleanup.pl $TAG.gff > $TAG.gene.gff
 
 echo "==> Files $TAG.genome.fa and $TAG.gene.gff successfully generated"
 

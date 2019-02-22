@@ -185,35 +185,40 @@ then
   then
     for i in $STUDY
     do
-      $SDIR/script/prepare_strain_ref.sh $SDIR $WDIR $i $CPUS
+      $SDIR/script/make_study_strain_files.sh $SDIR $WDIR $i $CPUS
     done 
   else 
     for i in $STUDY 
     do
-      $SDIR/script/prepare_strain_ref.sh $SDIR $WDIR $i $CPUS $REF
+      $SDIR/script/make_study_strain_files.sh $SDIR $WDIR $i $CPUS $REF
     done
   fi
   
   ## now check if that all worked out OK 
   for i in $STUDY
   do
-    $SDIR/script/ref_check_study_dir.sh $WDIR $i
+    $SDIR/script/check_study_strain_files.sh $WDIR $i
   done  
   echo
   echo "ALL STUDY STRAIN FILES AND DIRS ARE OK!"  
   echo
   
   cd $WDIR/ref_strains
-  
+ 
+  for i in $REFSTR
+  do
+    $SDIR/script/make_reference_strain_files.sh $SDIR $WDIR $i $CPUS $REF
+  done
+
   ## check if reference strain GTF files in refstr are in Roary-friendly format (e.g. all NCBI files were cleaned up). 
   ## reqs: 1) unique IDs that are locus tags; 2) no names that are equal to ID; 3) only CDS features; 4) ##FASTA and genomic fa are present. 
   
   for i in $REFSTR
   do
-    $SDIR/script/ref_check_roary_gff.sh $WDIR $i
+    $SDIR/script/check_reference_strain_files.sh $WDIR $i
   done 
   echo
-  echo "ALL REFERENCE STRAIN GFF FILES ARE OK!"  
+  echo "ALL REFERENCE STRAIN FILES ARE OK!"  
   echo
   
   ## make study strain GFF to run roary 
@@ -252,9 +257,9 @@ then
 else 
   ## case 2: simple prep
   cd $WDIR/study_strains 
-  $SDIR/script/prepare_simple_ref.sh $SDIR $WDIR $TAG $CPUS 
+  $SDIR/script/make_simple_reference_files.sh $SDIR $WDIR $TAG $CPUS 
 
-  $SDIR/script/ref_check_study_dir.sh $WDIR $TAG
+  $SDIR/script/check_study_strain_files.sh $WDIR $TAG
 
   cd $WDIR/fastqs 
   echo "==> Writing simple config file, simple.cfg"

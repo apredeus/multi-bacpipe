@@ -23,6 +23,10 @@ When successfully applied, this should generate (for each strain):
 * TDF files for quick and scalable visualization in IGV;
 * scaled bigWig files for visualization in JBrowse (see [doi:10.1128/mBio.01442-14](http://mbio.asm.org/content/5/4/e01442-14.full) for description of scaling); 
 * raw read and TPM expression tables using [featureCounts](http://subread.sourceforge.net/) and accounting for multi-mapping reads; 
+
+Additionally, the following things will be generated:
+* master count/TPM tables with full coding and non-coding gene orthology; 
+* informative alignment statistics, including rRNA/tRNA content, number of multimappers, fraction of successfully assigned reads, etc.; 
 * a single [MultiQC](http://multiqc.info/) quality control report.
 
 ## Installation and requirements 

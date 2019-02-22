@@ -1,25 +1,22 @@
 #!/usr/bin/env perl 
 
-## similar to ncbi_to_roary.pl, but with some differences 
+## similar to reference_gff_cleanup.pl, but with some differences 
 ## basically all "gene" features are included, and reannotated based on the 
-## features that have the same locus_tag (usually halves of a pseudogene) are unified into one feature 
-## "CDS" gff now contains "pseudogene" entries as well. 
-## "ncRNA" gff contains all of things that match *rna (non-case-spec), but not rRNA/tRNA. 
+## features that have the same locus_tag (usually halves of a pseudogene) are unified into one feature that would be quantified as 1 entity 
+## "ncRNA" are all things that match *rna (non-case-spec), but not rRNA/tRNA. 
 
 use strict;
 use warnings; 
 
 if ($#ARGV != 1) {
-  die "USAGE: simple_gff_reannotation.pl <tag> <ncbi_gff>\n";
+  die "USAGE: simple_gff_cleanup.pl <ncbi_gff>\n";
 }
 
-my $tag = shift @ARGV; 
 my $gff = shift @ARGV; 
 
 open GFF,"<",$gff or die "$!"; 
-open GENE,">","$tag.gene.gff" or die "$!"; 
 
-my $gene = {};
+my $genes = {};
 my $prod = {};
 my ($coding,$pseudo,$ncrna,$trna,$rrna,$other,$notag) = (0)x7; 
 
@@ -36,18 +33,18 @@ while (<GFF>) {
     ## a bit of extra safety 
     $biotype = "pseudogene" if ($t[8] =~ m/pseudo=true/); 
     ## this accounts for duplicate locus tags in 
-    if (! defined $gene->{$lt}) { 
-      $gene->{$lt}->{lt} = $lt;  
-      $gene->{$lt}->{id} = $id;  
-      $gene->{$lt}->{name} = $name;  
-      $gene->{$lt}->{biotype} = $biotype;
-      $gene->{$lt}->{chr} = $t[0];   
-      $gene->{$lt}->{beg} = $t[3];   
-      $gene->{$lt}->{end} = $t[4];   
-      $gene->{$lt}->{strand} = $t[6];
+    if (! defined $genes->{$lt}) { 
+      $genes->{$lt}->{lt} = $lt;  
+      $genes->{$lt}->{id} = $id;  
+      $genes->{$lt}->{name} = $name;  
+      $genes->{$lt}->{biotype} = $biotype;
+      $genes->{$lt}->{chr} = $t[0];   
+      $genes->{$lt}->{beg} = $t[3];   
+      $genes->{$lt}->{end} = $t[4];   
+      $genes->{$lt}->{strand} = $t[6];
     } else { 
-      $gene->{$lt}->{beg} = ($gene->{$lt}->{beg} <= $t[3]) ? $gene->{$lt}->{beg} : $t[3];  
-      $gene->{$lt}->{end} = ($gene->{$lt}->{end} >= $t[4]) ? $gene->{$lt}->{end} : $t[4];  
+      $genes->{$lt}->{beg} = ($genes->{$lt}->{beg} <= $t[3]) ? $genes->{$lt}->{beg} : $t[3];  
+      $genes->{$lt}->{end} = ($genes->{$lt}->{end} >= $t[4]) ? $genes->{$lt}->{end} : $t[4];  
       ## everything else is defined and stays the same 
     } 
   } elsif (m/Parent=gene/) {
@@ -68,18 +65,18 @@ while (<GFF>) {
     $notag++ if ($lt =~ m/_$id$/); 
 
     ## this accounts for duplicate locus tags in 
-    if (!defined $gene->{$lt}) { 
-      $gene->{$lt}->{lt} = $lt;  
-      $gene->{$lt}->{id} = $id;  
-      $gene->{$lt}->{name} = $name;  
-      $gene->{$lt}->{biotype} = $biotype;
-      $gene->{$lt}->{chr} = $t[0];   
-      $gene->{$lt}->{beg} = $t[3];   
-      $gene->{$lt}->{end} = $t[4];   
-      $gene->{$lt}->{strand} = $t[6];
+    if (!defined $genes->{$lt}) { 
+      $genes->{$lt}->{lt} = $lt;  
+      $genes->{$lt}->{id} = $id;  
+      $genes->{$lt}->{name} = $name;  
+      $genes->{$lt}->{biotype} = $biotype;
+      $genes->{$lt}->{chr} = $t[0];   
+      $genes->{$lt}->{beg} = $t[3];   
+      $genes->{$lt}->{end} = $t[4];   
+      $genes->{$lt}->{strand} = $t[6];
     } else {
-      $gene->{$lt}->{beg} = ($gene->{$lt}->{beg} <= $t[3]) ? $gene->{$lt}->{beg} : $t[3];  
-      $gene->{$lt}->{end} = ($gene->{$lt}->{end} >= $t[4]) ? $gene->{$lt}->{end} : $t[4]; 
+      $genes->{$lt}->{beg} = ($genes->{$lt}->{beg} <= $t[3]) ? $genes->{$lt}->{beg} : $t[3];  
+      $genes->{$lt}->{end} = ($genes->{$lt}->{end} >= $t[4]) ? $genes->{$lt}->{end} : $t[4]; 
       ## everything else is defined and stays the same 
     } 
   } 
@@ -87,18 +84,18 @@ while (<GFF>) {
 
 print STDERR "GFF annotation processed; found $notag gene entries without a locus tag, for which new locus tags were generated.\n";
 
-foreach my $lt (sort keys %{$gene}) {
+foreach my $lt (sort keys %{$genes}) {
   if ($lt ne "NONE") { 
-    my $out = sprintf "%s\tBacpipe\tgene\t%s\t%s\t.\t%s\t.\t",$gene->{$lt}->{chr},$gene->{$lt}->{beg},$gene->{$lt}->{end},$gene->{$lt}->{strand};
+    my $out = sprintf "%s\tBacpipe\tgene\t%s\t%s\t.\t%s\t.\t",$genes->{$lt}->{chr},$genes->{$lt}->{beg},$genes->{$lt}->{end},$genes->{$lt}->{strand};
     $out = join ('',$out,"ID=",$lt,";");
-    my $name = ($gene->{$lt}->{name} eq "NONE") ? $lt : $gene->{$lt}->{name}; 
+    my $name = ($genes->{$lt}->{name} eq "NONE") ? $lt : $genes->{$lt}->{name}; 
     $out = join ('',$out,"Name=",$name,";");
-    my $product = (defined $prod->{$gene->{$lt}->{chr}}->{$gene->{$lt}->{id}}->{product}) ? $prod->{$gene->{$lt}->{chr}}->{$gene->{$lt}->{id}}->{product} : "NONE"; 
-    my $note    = (defined $prod->{$gene->{$lt}->{chr}}->{$gene->{$lt}->{id}}->{note}) ? $prod->{$gene->{$lt}->{chr}}->{$gene->{$lt}->{id}}->{note} : "NONE"; 
+    my $product = (defined $prod->{$genes->{$lt}->{chr}}->{$genes->{$lt}->{id}}->{product}) ? $prod->{$genes->{$lt}->{chr}}->{$genes->{$lt}->{id}}->{product} : "NONE"; 
+    my $note    = (defined $prod->{$genes->{$lt}->{chr}}->{$genes->{$lt}->{id}}->{note}) ? $prod->{$genes->{$lt}->{chr}}->{$genes->{$lt}->{id}}->{note} : "NONE"; 
     
     ## if product is defined, then use product; if note is defined instead of product, use note;
     ## if neither is defined, use nothing. 
-    my $biotype = $gene->{$lt}->{biotype}; 
+    my $biotype = $genes->{$lt}->{biotype}; 
     if ($biotype =~ m/rna/i && $biotype ne "rRNA" && $biotype ne "tRNA") { 
       $biotype = "noncoding_rna"; 
     }
@@ -126,11 +123,11 @@ foreach my $lt (sort keys %{$gene}) {
     $out = join ('',$out,"locus_tag=",$lt,"\n");
     ## print out every gene entry, even rRNA and tRNA (they won't have expression since reads are removed from BAM)
     ## merge pseudogene halves into one "gene" entry with the same locus tag if LT of halves are the same 
-    print GENE $out; 
+    ## above treatment of pseudogenes ONLY APPLIES WHEN --SIMPLE IS IN USE! 
+    print $out; 
   }
 } 
 
 print STDERR "GFF output stats: $coding protein coding, $pseudo pseudogenes, $ncrna noncoding RNAs, $trna tRNAs, $rrna rRNAs, $other others.\n"; 
 
 close GFF; 
-close GENE; 
