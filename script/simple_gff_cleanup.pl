@@ -1,14 +1,15 @@
 #!/usr/bin/env perl 
 
 ## similar to reference_gff_cleanup.pl, but with some differences 
-## basically all "gene" features are included, and reannotated based on the 
-## features that have the same locus_tag (usually halves of a pseudogene) are unified into one feature that would be quantified as 1 entity 
+## basically all "gene" features are included, and "gene" borders are those defined in GFF (eg with UTR for LT2)  
+## features that have the same locus_tag (usually halves of a pseudogene) are UNIFIED into one feature that would be quantified as 1 entity
+## "gene" entries with no locus_tag are GIVEN a new locus tag based on their ID (usually gene*) - now LT looks like NOTAG_gene123 
 ## "ncRNA" are all things that match *rna (non-case-spec), but not rRNA/tRNA. 
 
 use strict;
 use warnings; 
 
-if ($#ARGV != 1) {
+if ($#ARGV != 0) {
   die "USAGE: simple_gff_cleanup.pl <ncbi_gff>\n";
 }
 
@@ -28,7 +29,7 @@ while (<GFF>) {
     my $name = ($t[8] =~ m/Name=(.*?);/) ? $1 : "NONE"; 
     my $biotype = ($t[8] =~ m/;gene_biotype=(\w+)/) ? $1 : "NONE";
     ## quite few annotations have ncRNAs and rRNA/tRNA without a locus tag
-    my $lt   = ($t[8] =~ m/;locus_tag=(\w+)/) ? $1 : join ('',$tag,"_",$id); 
+    my $lt   = ($t[8] =~ m/;locus_tag=(\w+)/) ? $1 : "NOTAG_".$id; 
     $notag++ if ($lt =~ m/_$id$/); 
     ## a bit of extra safety 
     $biotype = "pseudogene" if ($t[8] =~ m/pseudo=true/); 
@@ -48,6 +49,7 @@ while (<GFF>) {
       ## everything else is defined and stays the same 
     } 
   } elsif (m/Parent=gene/) {
+    ## products are either in product or Note field; use former, if not there, use latter
     my @t = split /\t+/; 
     my $id = ($t[8] =~ m/Parent=(.*?);/) ? $1 : "NONE"; 
     my $product = ($t[8] =~ m/;product=(.*?);/) ? $1 : "NONE"; 
@@ -61,7 +63,7 @@ while (<GFF>) {
     my $id = ($t[8] =~ m/ID=(.*?);/) ? $1 : "NONE"; 
     my $name = ($t[8] =~ m/Name=(.*?);/) ? $1 : "NONE"; 
     my $biotype = "pseudogene";
-    my $lt   = ($t[8] =~ m/;locus_tag=(\w+)/) ? $1 : join ('',$tag,"_",$id); 
+    my $lt   = ($t[8] =~ m/;locus_tag=(\w+)/) ? $1 : "NOTAG_".$id; 
     $notag++ if ($lt =~ m/_$id$/); 
 
     ## this accounts for duplicate locus tags in 
@@ -82,9 +84,11 @@ while (<GFF>) {
   } 
 } 
 
-print STDERR "GFF annotation processed; found $notag gene entries without a locus tag, for which new locus tags were generated.\n";
+print STDERR "$gff annotation file processed; found $notag gene entries without a locus tag, for which new locus tags were generated.\n";
 
-foreach my $lt (sort keys %{$genes}) {
+my @keys = sort { $genes->{$a}->{chr} cmp $genes->{$b}->{chr} || $genes->{$a}->{beg} <=> $genes->{$b}->{beg} } keys %{$genes};
+
+foreach my $lt (@keys) {
   if ($lt ne "NONE") { 
     my $out = sprintf "%s\tBacpipe\tgene\t%s\t%s\t.\t%s\t.\t",$genes->{$lt}->{chr},$genes->{$lt}->{beg},$genes->{$lt}->{end},$genes->{$lt}->{strand};
     $out = join ('',$out,"ID=",$lt,";");
