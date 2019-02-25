@@ -46,7 +46,7 @@ then
   ## let's check again if our study strains check out  
   for i in $STUDY
   do
-    $SDIR/script/ref_check_study_dir.sh $WDIR $i
+    $SDIR/script/check_study_strain_files.sh $WDIR $i
   done
   echo
   echo "ALL STUDY STRAIN FILES AND DIRS ARE OK!"  
@@ -59,7 +59,7 @@ then
 
   for i in $REFSTR
   do
-    $SDIR/script/ref_check_roary_gff.sh $WDIR $i
+    $SDIR/script/check_reference_strain_files.sh $WDIR $i
   done
   echo
   echo "ALL REFERENCE STRAIN GFF FILES ARE OK!"  
@@ -73,7 +73,7 @@ else
   echo -e "Following study strain is found:\n\n$TAG\n"
 
   ## let's check again if our study strains check out  
-  $SDIR/script/ref_check_study_dir.sh $WDIR $TAG
+  $SDIR/script/check_study_strain_files.sh $WDIR $TAG
 
   echo
   echo "STUDY STRAIN FILES AND DIRS ARE OK!"  

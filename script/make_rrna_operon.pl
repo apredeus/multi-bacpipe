@@ -8,37 +8,63 @@ use strict;
 use warnings; 
 #use Data::Dumper; 
 
-if ($#ARGV != 0) {
-  die "USAGE: make_rrna_operon.pl <united_gff>\n";
+if ($#ARGV != 1) {
+  die "USAGE: make_rrna_operon.pl <prokka_gff> <gene_gff>\n";
 }
 
-my $gff   = shift @ARGV; 
-open GFF,"<",$gff or die "$!"; 
+my $prokka_gff = shift @ARGV; 
+my $gene_gff = shift @ARGV; 
+open PRK_GFF,"<",$prokka_gff or die "$!"; 
+open GEN_GFF,"<",$gene_gff or die "$!";  ## "gene" GFF - could be united 
 
 my $genes = {}; ## 
 my @rrna; 
 
-while (<GFF>) {
+while (<PRK_GFF>) {
   if (! m/\t/) {
     next; 
   } else { 
     chomp; 
     my @t = split /\t+/; 
-    $t[8] =~ m/ID=(.*?);/; 
-    my $id = $1; 
-    $genes->{$id}->{chr} = $t[0]; 
-    $genes->{$id}->{beg} = $t[3]-1; 
-    $genes->{$id}->{end} = $t[4];
-
-    if ($t[2] eq "tRNA") {  
-      $genes->{$id}->{type} = "tRNA"; 
-    } elsif ($t[2] eq "rRNA") {  
-      $genes->{$id}->{type} = "rRNA"; 
-      push @rrna,$id; 
-    } else { 
-      $genes->{$id}->{type} = "other"; 
+    if ($t[8] =~ m/ID=(.*?);/) { 
+      my $id = $1; 
+      $genes->{$id}->{chr} = $t[0]; 
+      $genes->{$id}->{beg} = $t[3]-1; 
+      $genes->{$id}->{end} = $t[4];
+  
+      if ($t[2] eq "tRNA") {  
+        $genes->{$id}->{type} = "tRNA"; 
+      } elsif ($t[2] eq "rRNA") {  
+        $genes->{$id}->{type} = "rRNA"; 
+        push @rrna,$id; 
+      } else { 
+        $genes->{$id}->{type} = "other"; 
+      }
     } 
   } 
+}
+
+while (<GEN_GFF>) {
+  if (! m/\t/) {
+    next;
+  } else {
+    chomp;
+    my @t = split /\t+/;
+    if ($t[8] =~ m/ID=(.*?);/) { 
+      my $id = $1;
+      $genes->{$id}->{chr} = $t[0];
+      $genes->{$id}->{beg} = $t[3]-1;
+      $genes->{$id}->{end} = $t[4];
+  
+      if ($t[2] eq "tRNA" || $t[8] =~ m/gene_biotype=tRNA/) {
+        $genes->{$id}->{type} = "tRNA";
+      } elsif ($t[2] eq "rRNA" || $t[8] =~ m/gene_biotype=tRNA/) {
+        $genes->{$id}->{type} = "rRNA";
+      } else {
+        $genes->{$id}->{type} = "other";
+      }
+    }
+  }
 }
 
 ## print Dumper $genes; 
@@ -72,4 +98,5 @@ foreach my $key (keys %{$genes}) {
   } 
 } 
 
-close GFF; 
+close PRK_GFF; 
+close GEN_GFF; 

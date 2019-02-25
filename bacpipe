@@ -117,18 +117,22 @@ if [[ $MULTI != 0 ]]
 then 
   echo "==> Initiating bacpipe run using MULTI-STRAIN workflow!"  
   echo "==> Following variables were set:"
+  echo
   echo "      WDIR: $WDIR"
   echo "      SDIR: $SDIR"
   echo "    CONFIG: $CONFIG"
   echo "      CPUS: $CPUS"
   echo "    KEYSTR: $KEYSTR"
+  echo
 else 
   echo "==> Initiating bacpipe run using SINGLE STRAIN workflow!"  
   echo "==> Following variables were set:"
+  echo
   echo "      WDIR: $WDIR"
   echo "      SDIR: $SDIR"
   echo "    CONFIG: $CONFIG"
   echo "      CPUS: $CPUS"
+  echo
 fi
 
 ##########################################################################################

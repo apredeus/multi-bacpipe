@@ -151,7 +151,7 @@ while (<GFF>) {
       my $crispr_lt = join "","CRISPR_",$crispr_count; 
       $crispr_count++; 
       $genes->{$crispr_lt}->{chr} = $t[0]; 
-      $genes->{$crispr_lt}->{type} = "CRISPR"; 
+      $genes->{$crispr_lt}->{type} = "other"; 
       $genes->{$crispr_lt}->{beg} = $t[3]; 
       $genes->{$crispr_lt}->{end} = $t[4]; 
       $genes->{$crispr_lt}->{strand} = $t[6];
@@ -215,10 +215,12 @@ foreach my $key (@keys) {
   $count++;
 }
 
-## now print name-to-new lt table 
+## now print new lt to name table
 foreach my $key (@keys) { 
-  if ($key !~ m/^${prefix}_/) { 
-    printf MATCH "%s\t%s\n",$key,$genes->{$key}->{new_lt};
+  if ($key !~ m/^${prefix}_/) {
+    $key =~ m/(.*?)_.*/;
+    my $name = $1;  
+    printf MATCH "%s\t%s\n",$genes->{$key}->{new_lt},$name;
   } 
 } 
 

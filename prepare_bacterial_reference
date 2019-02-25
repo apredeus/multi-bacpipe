@@ -99,23 +99,36 @@ done
 ###################################################################
 #### some sanity checks now 
 #####################################3
+MULTI=`grep -c "^Reference" $CONFIG || true`
 
 if $MULTI
 then
   WDIR=$1
   CONFIG=$2
-  echo "==> Intiating multi-strain workflow! Working directory is $WDIR, config file is $CONFIG"
+  echo "==> Initiating bacpipe reference preparation for MULTI-STRAIN workflow!"  
+  echo "==> Following variables were set:"
+  echo
+  echo "      WDIR: $WDIR"
+  echo "      SDIR: $SDIR"
+  echo "    CONFIG: $CONFIG"
+  echo "      CPUS: $CPUS"
+  echo
 elif $SIMPLE 
 then
   WDIR=$1
   TAG=$2
-  echo "==> Intiating single-strain workflow! Working directory is $WDIR, strain tag is $TAG"
+  echo "==> Initiating bacpipe reference preparation for SIMPLE SINGLE-STRAIN workflow!"  
+  echo "==> Following variables were set:"
+  echo
+  echo "      WDIR: $WDIR"
+  echo "      SDIR: $SDIR"
+  echo "       TAG: $TAG"
+  echo "      CPUS: $CPUS"
+  echo
 else 
   >&2 echo "ERROR: please set either --simple or --multi option!"
   exit 1
 fi 
-
-echo "WDIR: $WDIR Config: $CONFIG tag: $TAG Ref: $REF Cores: $CPUS Simple: $SIMPLE Multi: $MULTI"
 
 if [[ $WDIR == "" || ! -d $WDIR ]]
 then 

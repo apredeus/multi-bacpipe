@@ -20,12 +20,6 @@ else
   mkdir $WDIR/ref_strains/$TAG
 fi
 
-if [[ $CPUS == "" ]]
-then 
-  echo "==> Parallel jobs will be ran on 4 cores (default)."
-  CPUS=4
-fi
-
 if [[ $REF == "" ]] 
 then
   echo "==> No extra reference was specified, ncRNAs will be ignored"
@@ -47,7 +41,6 @@ then
   cat $TAG.genome.fa >> $TAG.roary.gff 
   echo "==> Files $TAG.genome.fa, $TAG.cleaned.gff, and $TAG.roary.gff successfully generated"
 else 
-then
   ## with REF blasting 
 
   ## clean up the GFF, get file $TAG.clean.gff (ncRNA/CDS/pseudo == longest CDS) 
@@ -62,7 +55,7 @@ then
 
   ## this script matches existing locus tags to Blast results, generating $TAG.match.tsv table 
   ## CDS could only match CDS, and ncRNA could only match ncRNA  
-  $SDIR/script/match_reference_gff.pl $TAG.gff $TAG.ref_blast.out $REF $TAG
+  $SDIR/script/match_reference_gff.pl $TAG.clean.gff $TAG.ref_blast.out $REF $TAG
   echo "==> Files $TAG.genome.fa, $TAG.cleaned.gff, $TAG.ref_blast.out, $TAG.match.tsv, and $TAG.roary.gff successfully generated"
 fi
  

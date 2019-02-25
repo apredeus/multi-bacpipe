@@ -51,7 +51,9 @@ then
   rm -rf $TAG.STAR
 fi
 mkdir $TAG.STAR 
-STAR --runThreadN $CPUS --runMode genomeGenerate --genomeDir $TAG.STAR --genomeFastaFiles $TAG.genome.fa --genomeSAindexNbases 10 &> /dev/null
+
+NSAI=`awk '{sum+=$2} END {printf "%d\n",log(sum)/(2*log(2))-3}' $TAG.genome.fa.fai`
+STAR --runThreadN $CPUS --runMode genomeGenerate --genomeDir $TAG.STAR --genomeFastaFiles $TAG.genome.fa --genomeSAindexNbases $NSAI &> /dev/null
 mv Log.out $TAG.star.log 
 echo "==> STAR aligner index $TAG.STAR successfully generated"
 
