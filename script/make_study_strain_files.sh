@@ -74,8 +74,8 @@ else
   ## find all CDS using Prodigal's default settings - no Rfam search here 
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} $TAG.genome.fa &> /dev/null 
 
-  makeblastdb -dbtype nucl -in $TAG.genome.fa -out ${TAG}_blast &> /dev/null 
-  blastn -query $REF -db ${TAG}_blast -evalue 1 -task megablast -outfmt 6 > $TAG.ref_blast.out 2> /dev/null 
+  makeblastdb -dbtype nucl -in $TAG.genome.fa -out ${TAG}.blast &> /dev/null 
+  blastn -query $REF -db ${TAG}.blast -evalue 1 -task megablast -outfmt 6 > $TAG.ref_blast.out 2> /dev/null 
 
   ## starting with v0.6 this gets all new locus tags 
   $SDIR/script/unify_study_gff.pl $TAG.prokka/$TAG.prokka.gff $TAG.ref_blast.out $REF $TAG
@@ -87,7 +87,7 @@ else
   echo
   echo "==> Found $N_CDS protein-coding (CDS) and $N_NCR non-coding RNA (misc_RNA/ncRNA) features."
   echo
-  rm ${TAG}_blast.n*
+  rm ${TAG}.blast.n*
 fi
  
 ## we need this format for featureCounts quant

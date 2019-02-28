@@ -50,8 +50,8 @@ else
   echo "##FASTA" >> $TAG.roary.gff 
   cat $TAG.genome.fa >> $TAG.roary.gff 
   
-  makeblastdb -dbtype nucl -in $TAG.genome.fa -out ${TAG}_blast &> /dev/null
-  blastn -query $REF -db ${TAG}_blast -evalue 1 -task megablast -outfmt 6 > $TAG.ref_blast.out 2> /dev/null
+  makeblastdb -dbtype nucl -in $TAG.genome.fa -out ${TAG}.blast &> /dev/null
+  blastn -query $REF -db ${TAG}.blast -evalue 1 -task megablast -outfmt 6 > $TAG.ref_blast.out 2> /dev/null
 
   ## this script matches existing locus tags to Blast results, generating $TAG.match.tsv table 
   ## CDS could only match CDS, and ncRNA could only match ncRNA  

@@ -218,8 +218,8 @@ foreach my $key (@keys) {
 ## now print new lt to name table
 foreach my $key (@keys) { 
   if ($key !~ m/^${prefix}_/) {
-    $key =~ m/(.*?)_.*/;
-    my $name = $1;  
+    my $name = $key;  
+    $name =~ s/_.*//g;
     printf MATCH "%s\t%s\n",$genes->{$key}->{new_lt},$name;
   } 
 } 

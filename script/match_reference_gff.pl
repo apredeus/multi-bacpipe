@@ -9,14 +9,15 @@ use strict;
 use warnings; 
 #use Data::Dumper; 
 
-my $prokka_gff = shift @ARGV; 
+my $clean_gff = shift @ARGV; 
 my $blast_out = shift @ARGV; 
 my $ref_fa = shift @ARGV; 
-my $tag = shift @ARGV; 
+my $tag = $clean_gff;
+$tag =~ s/.clean.gff//g;  
 
 my $match_table = $tag.".match.tsv";
 
-open GFF,"<",$prokka_gff or die "$!"; 
+open GFF,"<",$clean_gff or die "$!"; 
 open BLAST,"<",$blast_out or die "$!"; 
 open FA,"<",$ref_fa or die "$!"; 
 open MATCH,">",$match_table or die "$!"; 
@@ -24,9 +25,6 @@ open MATCH,">",$match_table or die "$!";
 my %length;
 my $genes = {};
 my $blast = {};
-my $count = 1; 
-$tag =~ m/(.*?)_.*/; 
-my $prefix = $1; ## locus tag prefix, use same as Prokka 
 
 ## read reference fasta (make sure it's not folded!)
 ## get length of each sequence 
@@ -84,144 +82,54 @@ while (<BLAST>) {
 #print Dumper $blast;
 
 foreach my $name (keys %{$blast}) { 
-  if (scalar keys %{$blast->{$name}} == 1) { 
-    ## one name - one hit, all is good 
-    $genes->{$name}->{type} = $blast->{$name}->{1}->{type}; 
-    $genes->{$name}->{chr} = $blast->{$name}->{1}->{chr}; 
-    $genes->{$name}->{beg} = $blast->{$name}->{1}->{beg}; 
-    $genes->{$name}->{end} = $blast->{$name}->{1}->{end}; 
-    $genes->{$name}->{strand} = $blast->{$name}->{1}->{strand}; 
-  } else {
-    ## 2+ hits per name
+  ## 2+ hits per name require additional parsing, see above 
+  if (scalar keys %{$blast->{$name}} != 1) { 
     my @hits = keys %{$blast->{$name}}; 
     my $best_ident = 0; 
     my $best_len = 0;
-    ## establish best length and best id
+    ## establish best length and best identity %
     foreach my $hit (@hits) { 
-      $best_ident = ($blast->{$name}->{$hit}->{ident} > $best_ident) ? $blast->{$name}->{$hit}->{ident} : $best_ident;
-      $best_len = ($blast->{$name}->{$hit}->{len} > $best_len) ? $blast->{$name}->{$hit}->{len} : $best_len;
+      $best_ident = $blast->{$name}->{$hit}->{ident} if ($blast->{$name}->{$hit}->{ident} > $best_ident);
+      $best_len = $blast->{$name}->{$hit}->{len} if ($blast->{$name}->{$hit}->{len} > $best_len);
     } 
-    ## add qualifying hits to "genes" hash 
-    my $append_counter = 2; 
     foreach my $hit (@hits) { 
-      my $ident = $blast->{$name}->{$hit}->{ident};
-      my $len = $blast->{$name}->{$hit}->{len};
-      if ($ident == $best_ident && $len == $best_len) {
-        if (defined $genes->{$name}) {
-          my $appended_name = join "_",$name,$append_counter; 
-          $append_counter++; 
-          $genes->{$appended_name}->{type} = $blast->{$name}->{$hit}->{type}; 
-          $genes->{$appended_name}->{chr} = $blast->{$name}->{$hit}->{chr}; 
-          $genes->{$appended_name}->{beg} = $blast->{$name}->{$hit}->{beg}; 
-          $genes->{$appended_name}->{end} = $blast->{$name}->{$hit}->{end}; 
-          $genes->{$appended_name}->{strand} = $blast->{$name}->{$hit}->{strand}; 
-        } else {  
-          $genes->{$name}->{type} = $blast->{$name}->{$hit}->{type}; 
-          $genes->{$name}->{chr} = $blast->{$name}->{$hit}->{chr}; 
-          $genes->{$name}->{beg} = $blast->{$name}->{$hit}->{beg}; 
-          $genes->{$name}->{end} = $blast->{$name}->{$hit}->{end}; 
-          $genes->{$name}->{strand} = $blast->{$name}->{$hit}->{strand}; 
-        } 
-      }  
+      delete $blast->{$name}->{$hit} if ($blast->{$name}->{$hit}->{len} != $best_len);
     }
   } 
 }
-# I mean, god damn! 
 
-## now parse Prokka annotation, including rRNA/tRNA/CRISPR; rename tmRNA -> ncRNA
-
-my $crispr_count = 1; 
-
+## clean GFF can only have 5 types of values in col 3: CDS, ncRNA, tRNA, rRNA, other. 
 while (<GFF>) {
-  if (m/\t/) {  
-    chomp; 
-    my @t = split /\t+/;
-    if ($t[8] =~ m/ID=(.*?);/) {
-      my $lt = $1;
-      ## rename misc_RNA, tmRNA etc into tRNA 
-      $t[2] = "ncRNA" if ($t[2] =~ m/rna/i && $t[2] ne "rRNA" && $t[2] ne "tRNA");  
-      $genes->{$lt}->{chr} = $t[0]; 
-      $genes->{$lt}->{type} = $t[2]; 
-      $genes->{$lt}->{beg} = $t[3]; 
-      $genes->{$lt}->{end} = $t[4]; 
-      $genes->{$lt}->{strand} = $t[6]; 
-    } elsif ($t[2] eq "repeat_region") { 
-      my $crispr_lt = join "","CRISPR_",$crispr_count; 
-      $crispr_count++; 
-      $genes->{$crispr_lt}->{chr} = $t[0]; 
-      $genes->{$crispr_lt}->{type} = "CRISPR"; 
-      $genes->{$crispr_lt}->{beg} = $t[3]; 
-      $genes->{$crispr_lt}->{end} = $t[4]; 
-      $genes->{$crispr_lt}->{strand} = $t[6];
-    }  
-  }      
-}
-
-## now compare appropriate features and drop FULL overlaps of same-typed features
-
-print STDERR "Merging blast-based annotation with Prokka-predicted features for strain $tag:\n";
-print STDERR "------------------------------------------------------------------------------\n";  
-foreach my $i (keys %{$genes}) { 
-  foreach my $j (keys %{$genes}) {
-    if (defined $genes->{$i} && $genes->{$j}) {  
-      if ($i gt $j) { 
-        my $chr1 = $genes->{$i}->{chr};
-        my $beg1 = $genes->{$i}->{beg};
-        my $end1 = $genes->{$i}->{end};
-        my $type1 = $genes->{$i}->{type}; 
-        my $strand1 = $genes->{$i}->{strand};
- 
-        my $chr2 = $genes->{$j}->{chr};
-        my $beg2 = $genes->{$j}->{beg};
-        my $end2 = $genes->{$j}->{end};
-        my $type2 = $genes->{$j}->{type}; 
-        my $strand2 = $genes->{$j}->{strand}; 
-
-        ## we don't delete ncRNA if it overlaps CDS, and vice versa
-        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 <= $beg2 && $end1 >= $end2 && $type1 eq $type2) {  
-          printf STDERR "Strain $tag, overlap detected: kept $i ($chr1,$beg1:$end1), dropped $j ($chr2,$beg2:$end2)\n"; 
-          delete $genes->{$j}; 
-        } 
-        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 > $beg2 && $end1 < $end2 && $type1 eq $type2) {  
-          printf STDERR "Strain $tag, overlap detected: kept $j ($chr2,$beg2:$end2), dropped $i ($chr1,$beg1:$end1)\n"; 
-          delete $genes->{$i}; 
-        } 
+  chomp; 
+  my @t = split /\t+/;
+  $t[8] =~ m/ID=(.*?);/;
+  my $lt = $1; ## all entries in clean GFF would have an lt, so no checks 
+  my $type = $t[2];     
+  my $chr = $t[0];     
+  my $beg = $t[3];     
+  my $end = $t[4];
+  my $strand = $t[6];
+     
+  foreach my $name (keys %{$blast}) { 
+    foreach my $hit (keys %{$blast->{$name}}) {
+      if ($chr eq $blast->{$name}->{$hit}->{chr} && $type eq $blast->{$name}->{$hit}->{type} && $strand eq $blast->{$name}->{$hit}->{strand}) { 
+        my $hit_beg = $blast->{$name}->{$hit}->{beg}; 
+        my $hit_end = $blast->{$name}->{$hit}->{end};
+        my $max_beg = ($beg > $hit_beg) ? $beg : $hit_beg;  
+        my $min_end = ($end < $hit_end) ? $end : $hit_end; 
+        my $overlap = $min_end - $max_beg; 
+        if ($overlap/($end-$beg) > 0.5 && $overlap/($hit_end-$hit_beg) > 0.5) { 
+          my $l1 = $end - $beg; 
+          my $l2 = $hit_end - $hit_beg; 
+          #print "DEBUG:     $lt $type $beg $end $strand    ::    $name $hit $hit_beg $hit_end    ::    $l1 $l2 $overlap\n"; 
+          print MATCH "$lt\t$name\n"; 
+        }
       }
-    } 
+    }
   }
 }
-
-## great way to order by both chr and beg!
-my @keys = sort { $genes->{$a}->{chr} cmp $genes->{$b}->{chr} || $genes->{$a}->{beg} <=> $genes->{$b}->{beg} } keys %{$genes};
-
-## now assign new locus tags and print unitied GFF
-foreach my $key (@keys) {
-  my $padded = sprintf "%05d",$count; 
-  my $new_lt = join "_",$prefix,$padded;
-  $genes->{$key}->{new_lt} = $new_lt; 
- 
-  my $chr = $genes->{$key}->{chr};
-  my $beg = $genes->{$key}->{beg};
-  my $end = $genes->{$key}->{end};
-  my $type = $genes->{$key}->{type}; 
-  my $biotype = $type; 
-  $biotype = "noncoding_rna" if ($type eq "ncRNA"); 
-  $biotype = "protein_coding" if ($type eq "CDS"); 
-  
-  my $strand = $genes->{$key}->{strand};
-  printf UNITED "%s\tBacpipe\t%s\t%d\t%d\t.\t%s\t.\tID=%s;gene_biotype=%s;\n",$chr,$type,$beg,$end,$strand,$new_lt,$biotype; 
-  $count++;
-}
-
-## now print name-to-new lt table 
-foreach my $key (@keys) { 
-  if ($key !~ m/^${prefix}_/) { 
-    printf MATCH "%s\t%s\n",$key,$genes->{$key}->{new_lt};
-  } 
-} 
 
 close FA;
 close GFF;  
 close BLAST; 
-close UNITED; 
 close MATCH;  
