@@ -12,7 +12,8 @@ use warnings;
 my $prokka_gff = shift @ARGV; 
 my $blast_out = shift @ARGV; 
 my $ref_fa = shift @ARGV; 
-my $tag = shift @ARGV; 
+my $tag = $blast_out; 
+$tag =~ s/.ref_blast.out//g;  
 
 my $united_gff = $tag.".united.gff";
 my $match_table = $tag.".match.tsv";
@@ -54,7 +55,7 @@ while (<BLAST>) {
   $t[0] =~ m/^(.*)\.(.*?)$/;
   my $name = $1; 
   my $type = $2;
-  die "ERROR: external reference can be of CDS/ncRNA type only!" if ($type ne "CDS" && $type ne "ncRNA");  
+  die "ERROR: external reference can be of CDS/ncRNA/pseudogene type only!" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "pseudogene");  
   my $len_ratio = $t[3]/$length{$t[0]}; 
 
   ## retain all high identity matches in blast hash 
@@ -130,7 +131,7 @@ foreach my $name (keys %{$blast}) {
 }
 # I mean, god damn! 
 
-## now parse Prokka annotation, including rRNA/tRNA/CRISPR; rename tmRNA -> ncRNA
+## now parse Prokka annotation, including rRNA/tRNA/CRISPR; rename tmRNA/misc_RNA -> ncRNA
 
 my $crispr_count = 1; 
 
@@ -159,10 +160,10 @@ while (<GFF>) {
   }      
 }
 
-## now compare appropriate features and drop FULL overlaps of same-typed features
+## now compare appropriate features and drop FULL overlaps of same-typed features or CDS with pseudogenes
 
-print STDERR "Merging blast-based annotation with Prokka-predicted features for strain $tag:\n";
-print STDERR "------------------------------------------------------------------------------\n";  
+print STDERR "====> Merging blast-based annotation with Prokka-predicted features for strain $tag:\n";
+print STDERR "----------------------------------------------------------------------------------\n";  
 foreach my $i (keys %{$genes}) { 
   foreach my $j (keys %{$genes}) {
     if (defined $genes->{$i} && $genes->{$j}) {  
@@ -177,14 +178,20 @@ foreach my $i (keys %{$genes}) {
         my $beg2 = $genes->{$j}->{beg};
         my $end2 = $genes->{$j}->{end};
         my $type2 = $genes->{$j}->{type}; 
-        my $strand2 = $genes->{$j}->{strand}; 
+        my $strand2 = $genes->{$j}->{strand};
 
         ## we don't delete ncRNA if it overlaps CDS, and vice versa
-        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 <= $beg2 && $end1 >= $end2 && $type1 eq $type2) {  
+        ## we DO delete CDS overlapping pseudogenes
+        my $type_match = 0; 
+        $type_match = 1 if ($type1 eq $type2 || ( $type1 eq "CDS" && $type2 eq "pseudogene") || ($type1 eq "pseudogene" && $type2 eq "CDS")); 
+
+        ## if one interval is fully contained within another, we drop the smaller one 
+        ## if intervals are exactly the same, random one will be dropped 
+        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 <= $beg2 && $end1 >= $end2 && $type_match) {  
           printf STDERR "Strain $tag, overlap detected: kept $i ($chr1,$beg1:$end1), dropped $j ($chr2,$beg2:$end2)\n"; 
           delete $genes->{$j}; 
         } 
-        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 > $beg2 && $end1 < $end2 && $type1 eq $type2) {  
+        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 >= $beg2 && $end1 <= $end2 && $type_match) {  
           printf STDERR "Strain $tag, overlap detected: kept $j ($chr2,$beg2:$end2), dropped $i ($chr1,$beg1:$end1)\n"; 
           delete $genes->{$i}; 
         } 

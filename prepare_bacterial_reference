@@ -99,7 +99,6 @@ done
 ###################################################################
 #### some sanity checks now 
 #####################################3
-MULTI=`grep -c "^Reference" $CONFIG || true`
 
 if $MULTI
 then
@@ -109,9 +108,9 @@ then
   echo "==> Following variables were set:"
   echo
   echo "      WDIR: $WDIR"
-  echo "      SDIR: $SDIR"
   echo "    CONFIG: $CONFIG"
   echo "      CPUS: $CPUS"
+  echo " REF FASTA: $REF"
   echo
 elif $SIMPLE 
 then
@@ -121,7 +120,6 @@ then
   echo "==> Following variables were set:"
   echo
   echo "      WDIR: $WDIR"
-  echo "      SDIR: $SDIR"
   echo "       TAG: $TAG"
   echo "      CPUS: $CPUS"
   echo
@@ -220,7 +218,10 @@ then
  
   for i in $REFSTR
   do
-    $SDIR/script/make_reference_strain_files.sh $SDIR $WDIR $i $CPUS $REF
+    $SDIR/script/make_reference_strain_files.sh $SDIR $WDIR $i $REF
+    grep -P "\tCDS\t" $WDIR/ref_strains/$i/$i.clean.gff > $WDIR/roary/1_$i.roary.gff 
+    echo "##FASTA" >> $WDIR/roary/1_$i.roary.gff
+    cat $WDIR/ref_strains/$i/$i.genome.fa >> $WDIR/roary/1_$i.roary.gff
   done
 
   ## check if reference strain GTF files in refstr are in Roary-friendly format (e.g. all NCBI files were cleaned up). 
@@ -237,31 +238,32 @@ then
   ## make study strain GFF to run roary 
   for i in $STUDY
   do
-    cat $WDIR/study_strains/$i/$i.CDS.gff   >  0_$i.roary.gff
-    echo "##FASTA"                          >> 0_$i.roary.gff
-    cat $WDIR/study_strains/$i/$i.genome.fa >> 0_$i.roary.gff
+    grep -P "\tCDS\t" $WDIR/study_strains/$i/$i.united.gff > $WDIR/roary/0_$i.roary.gff 
+    echo "##FASTA"                          >> $WDIR/roary/0_$i.roary.gff
+    cat $WDIR/study_strains/$i/$i.genome.fa >> $WDIR/roary/0_$i.roary.gff
   done 
   
   ## run Roary on all the strains present in the refstr
   
+  cd $WDIR/roary 
   echo "==> Running Roary on all strains, using $CPUS cores..."
-  roary -p $CPUS -v -e -f roary *.gff &> roary.log
-  rm 0*.roary.gff
-  mv roary roary.log $WDIR
+  roary -p $CPUS -v -e -f output *.gff &> roary.log
   
   ## edit the presence-absence file. You should have dos2unix in your $PATH
   
-  echo "==> Roary pan-genome analysis is done! Performing some post-processing..."
-  cd $WDIR/roary 
-  $SDIR/utils/dos2unix gene_presence_absence.csv
-  sed '1 s/.roary//g' gene_presence_absence.csv | sed '1 s/0_//g' > gene_presence_absence.csv.tmp 
-  mv gene_presence_absence.csv.tmp gene_presence_absence.csv
-  
+  echo "==> Roary pan-genome analysis is done!"
+  echo "==>  Performing Roary output reformatting; results will be written to roary/presence_absence_unix.csv"
+  ## basically we replace all commas with tabs, lose all quote marks, and make sure strains are named correctly
+  perl -ne 's/\r\n/\n/g; s/0_(.*?).roary/$1/g; s/1_(.*?).roary/$1/g; s/","/\t/g; s/"//g; print' output/gene_presence_absence.csv > presence_absence_unix.csv 
+
   ## make annotated CDS and ncRNA tables
-  ## we will use blast output files for all study & reference strains 
+  ## we will use blast output files for all study & reference strains.
+
+  exit 1 
+  ## <-- STOP HERE for now
   cd $WDIR
   echo "==> Generating a table of CDS orthologs."
-  $SDIR/script/create_orthology_table.pl $WDIR > annotated_CDS.tsv
+  $SDIR/script/make_ortholog_table.pl $WDIR > orthologs.tsv
   
   
   ## TODO: print stats - how many genes are common for all study strains, how many are unique, how many are seen in 2 and more strains.

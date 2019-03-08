@@ -12,8 +12,8 @@ use warnings;
 my $clean_gff = shift @ARGV; 
 my $blast_out = shift @ARGV; 
 my $ref_fa = shift @ARGV; 
-my $tag = $clean_gff;
-$tag =~ s/.clean.gff//g;  
+my $tag = $blast_out;
+$tag =~ s/.ref_blast.out//g;  
 
 my $match_table = $tag.".match.tsv";
 
@@ -23,7 +23,7 @@ open FA,"<",$ref_fa or die "$!";
 open MATCH,">",$match_table or die "$!"; 
 
 my %length;
-my $genes = {};
+my $ref_locus = {};
 my $blast = {};
 
 ## read reference fasta (make sure it's not folded!)
@@ -50,7 +50,7 @@ while (<BLAST>) {
   $t[0] =~ m/^(.*)\.(.*?)$/;
   my $name = $1; 
   my $type = $2;
-  die "ERROR: external reference can be of CDS/ncRNA type only!" if ($type ne "CDS" && $type ne "ncRNA");  
+  die "ERROR: external reference can be of CDS/ncRNA/pseudogene type only!" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "pseudogene");  
   my $len_ratio = $t[3]/$length{$t[0]}; 
 
   ## retain all high identity matches in blast hash 
@@ -98,7 +98,10 @@ foreach my $name (keys %{$blast}) {
   } 
 }
 
-## clean GFF can only have 5 types of values in col 3: CDS, ncRNA, tRNA, rRNA, other. 
+## clean GFF can only have 5 types of values in col 3: CDS, ncRNA, tRNA, rRNA, other.
+## they do not have pseudogenes because we take the biggest CDS with that lt 
+## that way Roary can make most use of it (otherwise the whole feature is dropped) 
+ 
 while (<GFF>) {
   chomp; 
   my @t = split /\t+/;
@@ -112,23 +115,37 @@ while (<GFF>) {
      
   foreach my $name (keys %{$blast}) { 
     foreach my $hit (keys %{$blast->{$name}}) {
-      if ($chr eq $blast->{$name}->{$hit}->{chr} && $type eq $blast->{$name}->{$hit}->{type} && $strand eq $blast->{$name}->{$hit}->{strand}) { 
+      my $type_match = 0; 
+      $type_match = 1 if ($type eq $blast->{$name}->{$hit}->{type} || $blast->{$name}->{$hit}->{type} eq "pseudogene"); 
+      if ($chr eq $blast->{$name}->{$hit}->{chr} && $strand eq $blast->{$name}->{$hit}->{strand} && $type_match) { 
         my $hit_beg = $blast->{$name}->{$hit}->{beg}; 
         my $hit_end = $blast->{$name}->{$hit}->{end};
         my $max_beg = ($beg > $hit_beg) ? $beg : $hit_beg;  
         my $min_end = ($end < $hit_end) ? $end : $hit_end; 
-        my $overlap = $min_end - $max_beg; 
-        if ($overlap/($end-$beg) > 0.5 && $overlap/($hit_end-$hit_beg) > 0.5) { 
-          my $l1 = $end - $beg; 
-          my $l2 = $hit_end - $hit_beg; 
-          #print "DEBUG:     $lt $type $beg $end $strand    ::    $name $hit $hit_beg $hit_end    ::    $l1 $l2 $overlap\n"; 
-          print MATCH "$lt\t$name\n"; 
+        my $ovl1 = ($min_end - $max_beg)/($end-$beg); 
+        my $ovl2 = ($min_end - $max_beg)/($hit_end-$hit_beg); 
+        if ($ovl1 > 0.5 && $ovl2 > 0.5) {                      ## you can adjust these later; I think they are ok for now  
+          if (!defined $ref_locus->{$lt}->{name}) { 
+            $ref_locus->{$lt}->{name} = $name;
+            $ref_locus->{$lt}->{ident} =  $blast->{$name}->{$hit}->{ident};
+            $ref_locus->{$lt}->{len} =  $blast->{$name}->{$hit}->{len};
+          } else {  
+            if ($blast->{$name}->{$hit}->{len} > $ref_locus->{$lt}->{len} || $blast->{$name}->{$hit}->{ident} > $ref_locus->{$lt}->{ident}) { 
+              $ref_locus->{$lt}->{name} = $name;
+              $ref_locus->{$lt}->{ident} =  $blast->{$name}->{$hit}->{ident};
+              $ref_locus->{$lt}->{len} =  $blast->{$name}->{$hit}->{len};
+            } 
+          } 
         }
       }
     }
   }
 }
 
+foreach my $lt (keys %{$ref_locus}) { 
+  printf MATCH "%s\t%s\n",$lt,$ref_locus->{$lt}->{name};
+}
+ 
 close FA;
 close GFF;  
 close BLAST; 

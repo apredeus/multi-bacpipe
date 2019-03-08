@@ -24,15 +24,14 @@ my ($in_gene,$in_pseudo) = (0)x2;
 my ($in_cds,$in_ncrna,$in_trna,$in_rrna,$in_other) = (0)x5; 
 my ($out_cds,$out_pseudo,$out_ncrna,$out_trna,$out_rrna,$out_other) = (0)x6; 
 
-
 while (<GFF>) { 
   if (m/\tgene\t/ || m/\tpseudogene\t/) {
     ## parse Level 1 features 
     my @t = split /\t+/; 
-    my $id = ($t[8] =~ m/ID=(\w+);/i) ? $1 : "NONE"; 
+    my $id = ($t[8] =~ m/ID=(.*?);/i) ? $1 : "NONE"; 
     my $name = ($t[8] =~ m/Name=(.*?);/i) ? $1 : "NONE"; 
     my $biotype = ($t[8] =~ m/gene_biotype=(\w+)/i) ? $1 : "NONE";
-    my $lt   = ($t[8] =~ m/;locus_tag=(\w+)/i) ? $1 : "NONE"; 
+    my $lt   = ($t[8] =~ m/;locus_tag=([-\w]+)/i) ? $1 : "NONE"; 
     
     if ($t[8] =~ m/pseudo=true/i || $t[2] eq "pseudogene") { 
       $biotype = "pseudogene";
@@ -68,7 +67,7 @@ while (<GFF>) {
   } elsif (m/Parent=gene/i) {
     ## parse Level 2 features 
     my @t = split /\t+/; 
-    my $id = ($t[8] =~ m/Parent=(\w+)/i) ? $1 : "NONE"; 
+    my $id = ($t[8] =~ m/Parent=(.*?);/i) ? $1 : "NONE"; 
     my $product = ($t[8] =~ m/product=(.*?);/i || $t[8] =~ m/product=(.*)$/i) ? $1 : "NONE"; 
     my $note = ($t[8] =~ m/note=(.*?);/i || $t[8] =~ m/note=(.*)$/i) ? $1 : "NONE";
      

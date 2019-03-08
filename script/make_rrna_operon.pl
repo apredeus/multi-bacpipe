@@ -15,10 +15,10 @@ if ($#ARGV != 1) {
 my $prokka_gff = shift @ARGV; 
 my $gene_gff = shift @ARGV; 
 open PRK_GFF,"<",$prokka_gff or die "$!"; 
-open GEN_GFF,"<",$gene_gff or die "$!";  ## "gene" GFF - could be united 
+open GEN_GFF,"<",$gene_gff or die "$!";  ## "gene" GFF - could be $TAG.gene.gff for --simple, or $TAG.united.gff for --multi. 
 
-my $genes = {}; ## 
-my @rrna; 
+my $genes = {}; ## all features in both GFF files 
+my @rtrna;      ## rRNA/tRNA as defined by Prokka 
 
 while (<PRK_GFF>) {
   if (! m/\t/) {
@@ -34,9 +34,10 @@ while (<PRK_GFF>) {
   
       if ($t[2] eq "tRNA") {  
         $genes->{$id}->{type} = "tRNA"; 
+        push @rtrna,$id; 
       } elsif ($t[2] eq "rRNA") {  
         $genes->{$id}->{type} = "rRNA"; 
-        push @rrna,$id; 
+        push @rtrna,$id; 
       } else { 
         $genes->{$id}->{type} = "other"; 
       }
@@ -50,15 +51,16 @@ while (<GEN_GFF>) {
   } else {
     chomp;
     my @t = split /\t+/;
-    if ($t[8] =~ m/ID=(.*?);/) { 
-      my $id = $1;
+    if ($t[8] =~ m/ID=(.*?);/) {
+      ## in case of Prokka/unified GFF collusions happen that made the script produce bugs  
+      my $id = "GENE".$1;
       $genes->{$id}->{chr} = $t[0];
       $genes->{$id}->{beg} = $t[3]-1;
       $genes->{$id}->{end} = $t[4];
   
       if ($t[2] eq "tRNA" || $t[8] =~ m/gene_biotype=tRNA/) {
         $genes->{$id}->{type} = "tRNA";
-      } elsif ($t[2] eq "rRNA" || $t[8] =~ m/gene_biotype=tRNA/) {
+      } elsif ($t[2] eq "rRNA" || $t[8] =~ m/gene_biotype=rRNA/) {
         $genes->{$id}->{type} = "rRNA";
       } else {
         $genes->{$id}->{type} = "other";
@@ -69,34 +71,36 @@ while (<GEN_GFF>) {
 
 ## print Dumper $genes; 
 
-foreach my $rrna (@rrna) { 
-  ## distance from nearest non-rRNA, non-tRNA gene to this rRNA gene from the left/right 
+foreach my $rtrna (@rtrna) { 
+  ## distance from nearest non-rRNA, non-tRNA gene to this rRNA/tRNA gene from the left/right 
   my $d_left  = 1000000; 
   my $d_right = 1000000; 
-  my $rbeg = $genes->{$rrna}->{beg};
-  my $rend = $genes->{$rrna}->{end};
+  my $rbeg = $genes->{$rtrna}->{beg};
+  my $rend = $genes->{$rtrna}->{end};
   
   foreach my $key (keys %{$genes}) { 
-    if ($genes->{$key}->{chr} eq $genes->{$rrna}->{chr} && $genes->{$key}->{type} ne "rRNA" && $genes->{$key}->{type} ne "tRNA") { 
-       my $cbeg = $genes->{$key}->{beg}; 
-       my $cend = $genes->{$key}->{end}; 
-
-       $d_left  = $rbeg-$cend if ($cend < $rbeg && $rbeg-$cend < $d_left);  
-       $d_right = $cbeg-$rend if ($cbeg > $rend && $cbeg-$rend < $d_right); 
+    my $cbeg = $genes->{$key}->{beg}; 
+    my $cend = $genes->{$key}->{end}; 
+    if ($genes->{$key}->{chr} eq $genes->{$rtrna}->{chr} && $genes->{$key}->{type} ne "rRNA" && $genes->{$key}->{type} ne "tRNA") { 
+      my $max_beg = ($rbeg > $cbeg) ? $rbeg : $cbeg; 
+      my $min_end = ($rend < $cend) ? $rend : $cend; 
+      if ( $min_end >= $max_beg ) {
+      ## this means non-rtRNA feature overlaps rRNA/tRNA
+      ## this should never happen, but with blasted references it sometimes does (esp with ncRNAs)
+        $d_left = 0; 
+        $d_right = 0; 
+        last; 
+      } else { 
+        $d_left  = $rbeg-$cend if ($cend < $rbeg && $rbeg-$cend < $d_left);   ## find closest non-rtRNA feature on the left
+        $d_right = $cbeg-$rend if ($cbeg > $rend && $cbeg-$rend < $d_right);  ## find closest non-rtRNA feature on the right 
+      }
     } 
   }
-  
-  $genes->{$rrna}->{lbound} = ($d_left > 50) ? $genes->{$rrna}->{beg} - $d_left + 50 : $genes->{$rrna}->{beg}; 
-  $genes->{$rrna}->{rbound} = ($d_right > 50) ? $genes->{$rrna}->{end} + $d_right - 50 : $genes->{$rrna}->{end}; 
+  ## if less than 50 bp away, keep the exact borders of rtRNA; if more, extend to -50 bp to next non-rtRNA feature
+  my $lbound = ($d_left > 50) ? $genes->{$rtrna}->{beg} - $d_left + 50 : $genes->{$rtrna}->{beg}; 
+  my $rbound = ($d_right > 50) ? $genes->{$rtrna}->{end} + $d_right - 50 : $genes->{$rtrna}->{end}; 
+  printf "%s\t%d\t%d\trRNA.%s\n",$genes->{$rtrna}->{chr},$lbound,$rbound,$rtrna;
 }
-
-foreach my $key (keys %{$genes}) { 
-  if ($genes->{$key}->{type} eq "rRNA") {
-    printf "%s\t%d\t%d\trRNA.%s\n",$genes->{$key}->{chr},$genes->{$key}->{lbound},$genes->{$key}->{rbound},$key;
-  } elsif ($genes->{$key}->{type} eq "tRNA") { 
-    printf "%s\t%d\t%d\ttRNA.%s\n",$genes->{$key}->{chr},$genes->{$key}->{beg},$genes->{$key}->{end},$key;
-  } 
-} 
 
 close PRK_GFF; 
 close GEN_GFF; 

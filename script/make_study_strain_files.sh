@@ -11,14 +11,13 @@ CPUS=$4
 REF=$5
 
 FA=$TAG.fa
-PROPHAGE=$TAG.prophage.bed
 
 if [[ -d "$WDIR/study_strains/$TAG" ]]
 then
-  echo "Found $WDIR/study_strains/$TAG! Will add files to the existing directory."
+  echo "==> Found $WDIR/study_strains/$TAG! Will add files to the existing directory."
   rm -rf $WDIR/study_strains/$TAG/*.STAR $WDIR/study_strains/$TAG/*.prokka 
 else 
-  echo "Directory $WDIR/study_strains/$TAG was not found and will be created." 
+  echo "==> Directory $WDIR/study_strains/$TAG was not found and will be created." 
   mkdir $WDIR/study_strains/$TAG
 fi
 
@@ -57,8 +56,7 @@ then
   ## It finds about 200 ncRNAs for average Salmonella; there are about 280 annotated right now. 
   ## Probably does a lot worse for less sequenced/studied organisms
  
-  echo "Running Prokka annotation; using --noanno option to only discover CDS"
-  echo "Annotating noncoding RNAs using default Prokka Rfam database!" 
+  echo "==> Running Prokka annotation; using --noanno option to discover CDS/rRNA/tRNA, and --rfam to discover ncRNA."
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} --rfam $TAG.genome.fa &> /dev/null 
   grep -P "\tCDS\t" $TAG.prokka/$TAG.prokka.gff | sed "s/$/;gene_biotype=protein_coding;/g" > $TAG.CDS.gff
   grep -P "\tmisc_RNA\t" $TAG.prokka/$TAG.prokka.gff | sed "s/misc_RNA/ncRNA/g" | sed "s/$/;gene_biotype=noncoding_rna;/g" > $TAG.ncRNA.gff
@@ -67,9 +65,16 @@ then
   echo
   echo "==> Found $N_CDS protein-coding (CDS) and $N_NCR non-coding RNA (misc_RNA/ncRNA) features."
   echo 
+ 
+  ## TODO: Change this into reformatting Prokka -> United 
+  cat $TAG.ncRNA.gff $TAG.CDS.gff | sort -k1,1 -k4,4n > $TAG.united.gff 
+  if [[ -f $TAG.prophage.bed ]] 
+  then 
+    bedtools intersect -wo -a $TAG.united.gff -b $TAG.prophage.bed > $TAG.prophage_overlap.tsv
+  fi 
 else 
   ## Make sure you have correct ncRNA names in the reference fasta - they will be used as a Name in GFF. 
-  echo "Running Prokka annotation; using --noanno option to only discover CDS."
+  echo "==> Running Prokka annotation; using --noanno option to discover CDS/rRNA/tRNA."
  
   ## find all CDS using Prodigal's default settings - no Rfam search here 
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} $TAG.genome.fa &> /dev/null 
@@ -78,7 +83,7 @@ else
   blastn -query $REF -db ${TAG}.blast -evalue 1 -task megablast -outfmt 6 > $TAG.ref_blast.out 2> /dev/null 
 
   ## starting with v0.6 this gets all new locus tags 
-  $SDIR/script/unify_study_gff.pl $TAG.prokka/$TAG.prokka.gff $TAG.ref_blast.out $REF $TAG
+  $SDIR/script/unify_study_gff.pl $TAG.prokka/$TAG.prokka.gff $TAG.ref_blast.out $REF
   grep -P "\tCDS\t"   $TAG.united.gff > $TAG.CDS.gff
   grep -P "\tncRNA\t" $TAG.united.gff > $TAG.ncRNA.gff
   
@@ -88,12 +93,16 @@ else
   echo "==> Found $N_CDS protein-coding (CDS) and $N_NCR non-coding RNA (misc_RNA/ncRNA) features."
   echo
   rm ${TAG}.blast.n*
+  if [[ -f $TAG.prophage.bed ]] 
+  then 
+    bedtools intersect -wo -a $TAG.united.gff -b $TAG.prophage.bed > $TAG.prophage_overlap.tsv
+  fi 
 fi
  
 ## we need this format for featureCounts quant
-perl -ne 's/\tCDS\t|\tCRISPR\t|\tncRNA\t|\trRNA\t|\ttRNA\t/\tgene\t/g; print' $TAG.united.gff > $TAG.gene.gff
+perl -ne 's/\tCDS\t|\tother\t|\tncRNA\t|\trRNA\t|\ttRNA\t/\tgene\t/g; print' $TAG.united.gff > $TAG.gene.gff
 
-echo "==> Files $TAG.genome.fa, $TAG.united.gff, and $TAG.gene.gff successfully generated"
+echo "==> Files $TAG.genome.fa, $TAG.united.gff, and $TAG.gene.gff successfully generated."
 
 ## make STAR reference for small genome size
 
@@ -111,18 +120,18 @@ mv Log.out $TAG.star.log
 echo "==> STAR aligner index $TAG.STAR successfully generated"
 
 ##make rRNA/tRNA interval file  
-echo "Making combined rRNA operon interval file.."
-$SDIR/script/make_rrna_operon.pl $TAG.united.gff | sort -k1,1 -k2,2n | bedtools merge -i - > $TAG.rRNA.bed
+$SDIR/script/make_rrna_operon.pl $TAG.prokka/$TAG.prokka.gff $TAG.united.gff | sort -k1,1 -k2,2n | bedtools merge -i - > $TAG.rRNA.bed
 N_INT=`wc -l $TAG.rRNA.bed | awk '{print $1}'`
 N_OP=`awk '$3-$2>3000' $TAG.rRNA.bed | wc -l`
-echo "==> Identified $N_OP rRNA operons, $N_INT intervals overall." 
+echo "==> Making combined rRNA operon interval file: Identified $N_OP rRNA operons, $N_INT intervals overall." 
 
-## mv all to the ref dir 
-mv $TAG.gene.gff $TAG.united.gff $TAG.CDS.gff $TAG.ncRNA.gff $WDIR/study_strains/$TAG || : ## hope you are as confused as I was, lol 
-cp $PROPHAGE $WDIR/study_strains/$TAG/$TAG.prophage.bed || : 
+## mv all necessary files to the appropriate ref dirs 
+mv $TAG.gene.gff $TAG.united.gff $TAG.CDS.gff $TAG.ncRNA.gff $TAG.prophage_overlap.tsv $WDIR/study_strains/$TAG || : ## hope you are as confused as I was, lol 
 mv $TAG.match.tsv $TAG.ref_blast.out $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $WDIR/study_strains/$TAG
 mv $TAG.prokka ${TAG}.STAR $TAG.star.log $WDIR/study_strains/$TAG
 mv $TAG.rRNA.bed $WDIR/study_strains/$TAG
 
 echo "==> All the generated files and indexes have been moved to $WDIR/study_strains/$TAG."
-echo "==> Strain $TAG: all reference files successfully generated!" 
+echo "==> Strain $TAG: all reference files successfully generated!"
+echo
+echo 
