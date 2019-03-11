@@ -80,6 +80,8 @@ else
   echo
 fi 
 
+cd $WDIR
+
 if [[ ! -d bams || ! -d stats || ! -d strand || ! -d tdfs_and_bws || ! -d featureCounts || ! -d FastQC || ! -d exp_tables  ]]  
 then
   echo "==> One (or more) of the required directories is missing, I will try to create them.."

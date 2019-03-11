@@ -36,7 +36,8 @@ while (<FA>) {
     my $name = $1;
     my $type = $2;
     die "ERROR: You can't have blast types other than CDS/ncRNA/pseudogene!\n" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "pseudogene");
-    print STDERR "$name\t$type\n"; 
+    #print STDERR "$name\t$type\n";
+    $blast_type->{$name} = $type;  
   } 
 } 
 
@@ -116,7 +117,7 @@ foreach my $strain (@study_strains) {
     if ($type ne "CDS" && $type ne "other" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
       ## if we have seen this name for this strain already, keep adding entries
       ## no paralog entries for CDS - let Roary handle this 
-      print STDERR "Attention 1-STUDY: more than 1 defined match for blast name $bname, strain $strain!\n"; 
+      print STDERR "WARNING: more than 1 defined match for blast name $bname, strain $strain!\n"; 
       my $i = 1; 
       while (defined $names->{$bname}->{blast}->{$i}->{$strain}) { 
         $i++; 
@@ -167,13 +168,13 @@ foreach my $strain (@ref_strains) {
     my $lt = (split /\t+/)[0]; 
     my $bname = (split /\t+/)[1]; 
     $genes->{$strain}->{$lt}->{bname} = $bname;
-    my $type = $genes->{$strain}->{$lt}->{type}; 
+    my $type = $blast_type->{$bname};  ## this is to take care of pseudogenes  
     ## print "DEBUG2 $lt $bname $strain $type\n" if ($bname eq "STMMW43341");
  
-    if ($type ne "CDS" && $type ne "other" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
+    if ($type ne "CDS" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
       ## if we have seen this name for this strain already, keep adding entries
       ## no location is defined for reference strains 
-      print STDERR "Attention 1-REF: more than 1 defined match for blast name $bname, strain $strain!\n"; 
+      print STDERR "WARNING: more than 1 defined match for blast name $bname, strain $strain!\n"; 
       my $i = 1; 
       while (defined $names->{$bname}->{blast}->{$i}->{$strain}) { 
         $i++; 
@@ -204,7 +205,7 @@ for (my $i = 0; $i < scalar @header; $i++) {
 
 ## order of strains is as follows: 1) unix-alphabetical study; 2) unix-alphabetical reference
    
-while (<ROARY>) {
+OUTER: while (<ROARY>) {
   chomp;
   ## assuming pre-formatted gene presence-absence file with tabs; get all the empty fields right  
   my @t = split /\t/,$_,-1;
@@ -219,7 +220,12 @@ while (<ROARY>) {
     my $lt = ($t[$index] eq "") ? "NONE" : $t[$index]; 
 
     $genes->{$strain}->{$lt}->{rname} = $rname if ($lt ne "NONE");
-
+    ## we want to skip pseudogenes - if there's already blast entry associated with at least 1 lt, skip the whole roary line 
+    if (defined $genes->{$strain}->{$lt}->{bname} && $blast_type->{$genes->{$strain}->{$lt}->{bname}} eq "pseudogene") { 
+      delete $names->{$rname}->{roary}; 
+      next OUTER; 
+    } 
+ 
     if (defined $names->{$rname}->{roary}->{1}->{$strain}) {
       ## if we have seen this name for this strain already, keep adding entries
       ## no location is defined for reference strains 
@@ -240,7 +246,7 @@ while (<ROARY>) {
 
 ## you got all orthology records in $names now; it's just down to printing them 
 
-print STDERR Dumper $names;
+#print STDERR Dumper $names;
 print "$new_header\n";    
 
 foreach my $name (keys %{$names}) { 
@@ -259,6 +265,7 @@ foreach my $name (keys %{$names}) {
         $out = join "\t",$out,$lt;   
       }
       my $appended_name = ($i > 1) ? join '_',$name,$i : $name; ## when there's tnpA x2, output tnpA and tnpA_2
+      $loc = "chromosome" if ($loc eq ""); 
       $out = join "",$appended_name,"\t",$type,"\t",$loc,$out;
       print "$out\n";
       $i++; 
@@ -278,13 +285,54 @@ foreach my $name (keys %{$names}) {
         $out = join "\t",$out,$lt;   
       }
       my $appended_name = ($i > 1) ? join '_',$name,$i : $name; ## when there's tnpA x2, output tnpA and tnpA_2
+      $loc = "chromosome" if ($loc eq ""); 
       $out = join "",$appended_name,"\t",$type,"\t",$loc,$out;
       print "$out\n" if ($type ne "CDS");
       $i++; 
     }  
   } else { 
     ## both roary and blast are defined for this bee yotch  
-    printf STDERR "STRANGE BREW: $name\n"; 
+    ## (sorry I'm really exhausted at this point) 
+    ## if blast_type is CDS we ignore blast part of hash completely 
+    ## otherwise (if it's pseudogene or ncRNA) we ignore roary 
+    ## basically it should only happen for pseudogenes 
+    if ($blast_type->{$name} eq "CDS") { 
+      my $i = 1; 
+      while (defined $names->{$name}->{roary}->{$i}) {  
+        my $type = ""; 
+        my $loc = ""; 
+        my $out = ""; 
+        foreach my $strain (@all_strains) {
+          $type = $names->{$name}->{roary}->{$i}->{$strain}->{type} if defined $names->{$name}->{roary}->{$i}->{$strain}->{type}; 
+          $loc = $names->{$name}->{roary}->{$i}->{$strain}->{loc} if defined $names->{$name}->{roary}->{$i}->{$strain}->{loc}; 
+          my $lt = (defined $names->{$name}->{roary}->{$i}->{$strain}->{lt}) ? $names->{$name}->{roary}->{$i}->{$strain}->{lt} : "NONE";
+          $out = join "\t",$out,$lt;   
+        }
+        my $appended_name = ($i > 1) ? join '_',$name,$i : $name; ## when there's tnpA x2, output tnpA and tnpA_2
+        $loc = "chromosome" if ($loc eq ""); 
+        $out = join "",$appended_name,"\t",$type,"\t",$loc,$out;
+        print "$out\n";
+        $i++; 
+      }  
+    } else {   
+      my $i = 1; 
+      while (defined $names->{$name}->{blast}->{$i}) {  
+        my $type = ""; 
+        my $loc = ""; 
+        my $out = ""; 
+        foreach my $strain (@all_strains) {
+          $type = $names->{$name}->{blast}->{$i}->{$strain}->{type} if defined $names->{$name}->{blast}->{$i}->{$strain}->{type}; 
+          $loc = $names->{$name}->{blast}->{$i}->{$strain}->{loc} if defined $names->{$name}->{blast}->{$i}->{$strain}->{loc}; 
+          my $lt = (defined $names->{$name}->{blast}->{$i}->{$strain}->{lt}) ? $names->{$name}->{blast}->{$i}->{$strain}->{lt} : "NONE";
+          $out = join "\t",$out,$lt;   
+        }
+        my $appended_name = ($i > 1) ? join '_',$name,$i : $name; ## when there's tnpA x2, output tnpA and tnpA_2
+        $loc = "chromosome" if ($loc eq ""); 
+        $out = join "",$appended_name,"\t",$type,"\t",$loc,$out;
+        print "$out\n" if ($type ne "CDS");
+        $i++;
+      } 
+    }  
   }  
 }
 

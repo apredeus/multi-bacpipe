@@ -51,12 +51,12 @@ then
   ## both CDS_orthologs.tsv and ncRNA_orthologs.tsv should be annotated with chr/plasmid/prophage
   ## TODO: this would need to be rewritten for a new unified processing   
  
-  $SDIR/script/unify_exp_tables.pl $WDIR $CONFIG $WDIR/annotated_CDS.tsv $WDIR/annotated_ncRNA.tsv $KEYSTR
+  $SDIR/script/unify_exp_tables.pl $WDIR $CONFIG $WDIR/orthologs.tsv $KEYSTR
   
   echo "ALL EXPRESSION TABLE PROCESSING IS DONE!"
 else
   ## single-strain workflow, a lot simpler processing of the final tables 
-  ## just make tables, annotate with name/type/prophage 
+  ## just make tables, annotate with name/type/prophage (latter is optional)  
   TAG=`cut -f 2 $CONFIG | uniq`
  
   for i in *fc.tsv

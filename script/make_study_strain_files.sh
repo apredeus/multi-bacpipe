@@ -100,7 +100,7 @@ else
 fi
  
 ## we need this format for featureCounts quant
-perl -ne 's/\tCDS\t|\tother\t|\tncRNA\t|\trRNA\t|\ttRNA\t/\tgene\t/g; print' $TAG.united.gff > $TAG.gene.gff
+perl -ne 's/\tCDS\t|\tother\t|\tncRNA\t|\trRNA\t|\ttRNA\t|\tpseudogene\t/\tgene\t/g; print' $TAG.united.gff > $TAG.gene.gff
 
 echo "==> Files $TAG.genome.fa, $TAG.united.gff, and $TAG.gene.gff successfully generated."
 

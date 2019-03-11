@@ -17,8 +17,7 @@ use Data::Dumper;
 
 my $wdir = shift @ARGV; 
 my $config = shift @ARGV; 
-my $ann_cds = shift @ARGV; 
-my $ann_nc = shift @ARGV;
+my $ortho = shift @ARGV; 
 my $refstr = shift @ARGV;  
 
 my $sample_counts = {};
@@ -29,134 +28,77 @@ my $tpms = {};
 my @ref_strains;  
 
 open CONFIG,"<",$config or die "$!"; 
-open ANN_CDS,"<",$ann_cds or die "$!"; 
-open ANN_NC,"<",$ann_nc or die "$!"; 
+open ORTHO,"<",$ortho or die "$!"; 
 
 ## parse config, get list of study strains
 ## get how many samples are there for each strain 
 while (<CONFIG>) { 
   chomp;
-  my @tt = split /\t+/;  
-  my $strain = $tt[1]; 
+  my @t = split /\t+/;  
+  my $strain = $t[1]; 
   if (! m/^Reference/ && defined $sample_counts->{$strain}) {
     $sample_counts->{$strain}++; 
   } elsif (! m/^Reference/ && ! defined $sample_counts->{$strain}) { 
     $sample_counts->{$strain}=1; 
   } elsif (m/^Reference/) {
     ## we assume that each ref strain is only listed once 
-    push @ref_strains,$tt[1];
+    push @ref_strains,$t[1];
   } 
 }
 
 my @study_strains = keys %{$sample_counts}; 
-my $n_study = scalar @study_strains; 
 @study_strains = sort { $a cmp $b } @study_strains;
 @ref_strains   = sort { $a cmp $b } @ref_strains;
-my @strains = @study_strains; 
-push @strains,@ref_strains; 
+my @all_strains = @study_strains; 
+push @all_strains,@ref_strains; 
 
 my $ref_index; 
-#print Dumper($sample_counts); 
 
 ## parse annotation files, populate hash
-my $cds_header = <ANN_CDS>; 
-chomp $cds_header; 
-my $nc_header = <ANN_NC>; 
-chomp $nc_header; 
-my @str_names = split /\t+/,$cds_header;
+my $ortho_header = <ORTHO>; 
+chomp $ortho_header; 
+my @str_names = split /\t+/,$ortho_header;
 
-$cds_header =~ s/Gene_name\tGene_loc\t//g;  
-$nc_header  =~ s/ncRNA_name\tncRNA_loc\t//g;  
-die "ERROR: CDS and ncRNA annotations have different strain order!\n" if ($cds_header ne $nc_header); 
+$ortho_header =~ s/Gene_name\tType\tLocation\t//g;  
 
 ## get the column numbers 
 for (my $i=0; $i < scalar @str_names; $i++) { 
-  foreach my $strain (@strains) {
+  foreach my $strain (@all_strains) {
     ## -2 accounts for two shifts, see below 
-    $strain_idx->{$strain} = $i-2 if ($str_names[$i] eq $strain);
+    $strain_idx->{$strain} = $i-3 if ($str_names[$i] eq $strain);
   }
 } 
 
-#print Dumper($strain_idx); 
+print Dumper($strain_idx); 
 
 ## populate annotation hash 
-while (<ANN_CDS>) { 
+while (<ORTHO>) { 
   chomp;
-  my @tt   = split /\t+/;
-  my $name = shift @tt; 
-  my $loc  = shift @tt;
+  my @t   = split /\t+/;
+  my $name = shift @t; 
+  my $type = shift @t; 
+  my $loc  = shift @t;
   
-  ## following snippet is to skip genes that are absent in all study strains
-  ## sometimes Prokka doesn't find small ORFs which we later find using blast
-  ## this would prevent the issue with name "already seen", like thrL/thrL_2 
   my $present_in_study = 0; 
-  for (my $i = 0; $i < $n_study; $i++) { 
-    $present_in_study = 1 if ($tt[$i] ne "NONE"); 
+  for (my $i = 0; $i < scalar @study_strains; $i++) { 
+    $present_in_study = 1 if ($t[$i] ne "NONE"); 
   } 
   next if (! $present_in_study); 
 
   my $ref_idx = $strain_idx->{$refstr};
-  my $ref_lt = $tt[$ref_idx]; 
-  
-  $name =~ s/_.*//g if ($name !~ m/^group_/);
+  my $ref_lt = $t[$ref_idx]; 
   $name = $ref_lt if ($name =~ m/^group_/ && $ref_lt ne "NONE"); 
   
-  if (! defined $ann->{$name}) { 
-    $ann->{$name}->{count} = 1;                       ## how many times have we seen this name 
-    
-    foreach my $strain (@strains) { 
-      my $idx = $strain_idx->{$strain}; 
-      my $locus_tag = $tt[$idx];
-      $ann->{$name}->{$strain}->{lt} = $locus_tag;
-      $ann->{$name}->{loc} = $loc;                    ## chr/prophage/plasmid  
-    } 
-  } else {
-    my $name_count = $ann->{$name}->{count} + 1; 
-    my $app_name = join "_",$name,$name_count;        ## if name is trpA, app_name would be trpA_2, trpA_3 etc
-    $ann->{$name}->{count}++; 
-    
-    foreach my $strain (@strains) {
-      my $idx = $strain_idx->{$strain};
-      my $locus_tag = $tt[$idx];
-      $ann->{$app_name}->{$strain}->{lt} = $locus_tag;
-      $ann->{$app_name}->{loc} = $loc;                    ## chr/prophage/plasmid  
-    }
+  foreach my $strain (@all_strains) {
+    my $idx = $strain_idx->{$strain};
+    $ann->{$name}->{$strain}->{lt} = $t[$idx];
   }
+  $ann->{$name}->{type} = $type; 
+  $ann->{$name}->{loc} = $loc; 
 }
 
-while (<ANN_NC>) { 
-  chomp;
-  my @tt   = split /\t+/;
-  my $name = shift @tt; 
-  my $loc  = shift @tt;
-  $name    =~ s/_.*//g if ($name !~ m/^group_/); 
-  
-  if (! defined $ann->{$name}) { 
-    $ann->{$name}->{count} = 1;                     ## how many times have we seen this name 
-    foreach my $strain (@strains) { 
-      my $idx = $strain_idx->{$strain}; 
-      my $locus_tag = $tt[$idx];                    ## account for two shifts above  
-      $ann->{$name}->{$strain}->{lt} = $locus_tag;
-      $ann->{$name}->{loc} = $loc;                  ## chr/prophage/plasmid 
-    } 
-  } else {
-    my $name_count = $ann->{$name}->{count} + 1; 
-    my $app_name = join "_",$name,$name_count;      ## if name is trpA, app_name would be trpA_2, trpA_3 etc
-    $ann->{$name}->{count}++; 
-    
-    foreach my $strain (@strains) {
-      my $idx = $strain_idx->{$strain};
-      my $locus_tag = $tt[$idx];                    ## account for two shifts above  
-      $ann->{$app_name}->{$strain}->{lt} = $locus_tag;
-      $ann->{$app_name}->{loc} = $loc;                  ## chr/prophage/plasmid  
-    }
-  }
-}
+print Dumper $ann;
 
-#print Dumper($ann); 
-
-## finally, let's print the full annotated table
-## for this, we first populate the counts hash
 foreach my $strain (@study_strains) { 
   my $counts_file = join "/",$wdir,"exp_tables",$strain; 
   my $tpm_file = join "/",$wdir,"exp_tables",$strain; 
@@ -175,30 +117,30 @@ foreach my $strain (@study_strains) {
   while (<COUNTS>) { 
     chomp; 
     m/^(.*?)\t(.*)/;
-    my $locus_tag = $1;
+    my $lt = $1;
     my $count_str = $2; 
-    $counts->{$strain}->{$locus_tag} = $count_str; 
+    $counts->{$strain}->{$lt} = $count_str; 
   } 
   while (<TPMS>) { 
     chomp; 
     m/^(.*?)\t(.*)/;
-    my $locus_tag = $1;
+    my $lt = $1;
     my $tpm_str = $2; 
-    $tpms->{$strain}->{$locus_tag} = $tpm_str; 
+    $tpms->{$strain}->{$lt} = $tpm_str; 
   }
   
   close COUNTS; 
   close TPMS; 
 }
 
-#print Dumper($tpms);   
+print Dumper($tpms);   
 
 open ALL_COUNTS,">","Master_table.counts.tsv" or die "$!";
 open   ALL_TPMS,">","Master_table.TPM.tsv"    or die "$!";
 
 ## and now, the actual table. Serously, fuck this thing sideways. 
-my $print_header = "Gene_name\tLocation"; 
-foreach my $strain (@strains) { 
+my $print_header = "Gene_name\tType\tLocation"; 
+foreach my $strain (@all_strains) { 
   $print_header = join "\t",$print_header,$strain;
 }
 foreach my $strain (@study_strains) { 
@@ -217,8 +159,9 @@ foreach my $name (@names) {
   ## genes absent in every study strain are not to be printed
   my $flag = 0;
                                          
-  my $cnt_output = join "\t",$name,$ann->{$name}->{loc};
-  foreach my $strain (@strains) { 
+  my $cnt_output = join "\t",$name,$ann->{$name}->{type},$ann->{$name}->{loc};
+
+  foreach my $strain (@all_strains) { 
     $cnt_output = join "\t",$cnt_output,$ann->{$name}->{$strain}->{lt};
   }
   my $tpm_output = $cnt_output; 
@@ -226,11 +169,11 @@ foreach my $name (@names) {
   foreach my $strain (@study_strains) {
     my $counts_str = 0;
     my $tpm_str   = 0.000;  
-    my $locus_tag = $ann->{$name}->{$strain}->{lt};
-    if ($locus_tag ne "NONE") { 
+    my $lt = $ann->{$name}->{$strain}->{lt};
+    if ($lt ne "NONE") { 
       $flag       = 1;  
-      $counts_str = $counts->{$strain}->{$locus_tag}; 
-      $tpm_str    = $tpms->{$strain}->{$locus_tag}; 
+      $counts_str = $counts->{$strain}->{$lt}; 
+      $tpm_str    = $tpms->{$strain}->{$lt}; 
       $cnt_output = join "\t",$cnt_output,$counts_str;
       $tpm_output = join "\t",$tpm_output,$tpm_str;
     } else {
@@ -251,5 +194,4 @@ close ALL_COUNTS;
 close ALL_TPMS; 
 
 close CONFIG; 
-close ANN_CDS; 
-close ANN_NC; 
+close ORTHO; 

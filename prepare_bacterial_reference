@@ -247,7 +247,7 @@ then
   
   cd $WDIR/roary 
   echo "==> Running Roary on all strains, using $CPUS cores..."
-  roary -p $CPUS -v -e -f output *.gff &> roary.log
+  roary -i 90 -p $CPUS -v -e -f output *.gff &> roary.log
   
   ## edit the presence-absence file. You should have dos2unix in your $PATH
   
@@ -259,11 +259,9 @@ then
   ## make annotated CDS and ncRNA tables
   ## we will use blast output files for all study & reference strains.
 
-  exit 1 
-  ## <-- STOP HERE for now
   cd $WDIR
   echo "==> Generating a table of CDS orthologs."
-  $SDIR/script/make_ortholog_table.pl $WDIR > orthologs.tsv
+  $SDIR/script/make_ortholog_table.pl $WDIR roary/presence_absence_unix.csv $CONFIG $REF | awk '{if (NR==1) {print} else {print | "sort -k4,4"}}' > orthologs.tsv
   
   
   ## TODO: print stats - how many genes are common for all study strains, how many are unique, how many are seen in 2 and more strains.
