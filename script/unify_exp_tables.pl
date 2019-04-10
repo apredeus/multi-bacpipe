@@ -4,7 +4,7 @@
 
 use strict; 
 use warnings; 
-use Data::Dumper; 
+#use Data::Dumper; 
 
 ## take annotated tables of CDS and ncRNA 
 ## and expression tables of all individual strains (in exp_tables)  
@@ -69,7 +69,7 @@ for (my $i=0; $i < scalar @str_names; $i++) {
   }
 } 
 
-print Dumper($strain_idx); 
+#print Dumper($strain_idx); 
 
 ## populate annotation hash 
 while (<ORTHO>) { 
@@ -97,7 +97,7 @@ while (<ORTHO>) {
   $ann->{$name}->{loc} = $loc; 
 }
 
-print Dumper $ann;
+#print Dumper $ann;
 
 foreach my $strain (@study_strains) { 
   my $counts_file = join "/",$wdir,"exp_tables",$strain; 
@@ -133,7 +133,7 @@ foreach my $strain (@study_strains) {
   close TPMS; 
 }
 
-print Dumper($tpms);   
+#print Dumper($tpms);   
 
 open ALL_COUNTS,">","Master_table.counts.tsv" or die "$!";
 open   ALL_TPMS,">","Master_table.TPM.tsv"    or die "$!";

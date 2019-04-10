@@ -112,7 +112,6 @@ foreach my $strain (@study_strains) {
     $genes->{$strain}->{$lt}->{bname} = $bname;
     my $type = $genes->{$strain}->{$lt}->{type};
     my $loc = $genes->{$strain}->{$lt}->{loc};
-    ## print "DEBUG1 $lt $bname $strain $type $loc\n" if ($bname eq "STMMW43341");
  
     if ($type ne "CDS" && $type ne "other" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
       ## if we have seen this name for this strain already, keep adding entries
@@ -169,7 +168,6 @@ foreach my $strain (@ref_strains) {
     my $bname = (split /\t+/)[1]; 
     $genes->{$strain}->{$lt}->{bname} = $bname;
     my $type = $blast_type->{$bname};  ## this is to take care of pseudogenes  
-    ## print "DEBUG2 $lt $bname $strain $type\n" if ($bname eq "STMMW43341");
  
     if ($type ne "CDS" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
       ## if we have seen this name for this strain already, keep adding entries
@@ -193,7 +191,6 @@ my $header_line = <ROARY>;
 chomp $header_line;  
 my @header = split /\t/,$header_line;
 my $new_header = "Gene_name\tType\tLocation";  
-
 for (my $i = 0; $i < scalar @header; $i++) {
   my $strain = $header[$i];
   ## if we recognize tag of ref/study strain, we record which column of Roary output is it in 

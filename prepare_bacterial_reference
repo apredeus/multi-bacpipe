@@ -189,7 +189,19 @@ then
   
   ## prepare individual strain references for each study strain
   ## you have to have a genome file and prophage file in place 
-  
+ 
+  if [[ ! -d $WDIR/roary ]]
+  then
+    echo "==> $WDIR/roary/ not found and will be created."
+    mkdir $WDIR/roary
+  elif [[ -d $WDIR/roary/output ]]
+  then 
+    echo "==> Found directory $WDIR/roary/; $WDIR/roary/output will be erased and re-created."
+    rm -rf $WDIR/roary/output
+  else  
+    echo "==> Found directory $WDIR/roary/; $WDIR/roary/output will be created."
+  fi 
+
   cd $WDIR/study_strains
   
   if [[ $REF == "" ]]
@@ -254,7 +266,7 @@ then
   echo "==> Roary pan-genome analysis is done!"
   echo "==>  Performing Roary output reformatting; results will be written to roary/presence_absence_unix.csv"
   ## basically we replace all commas with tabs, lose all quote marks, and make sure strains are named correctly
-  perl -ne 's/\r\n/\n/g; s/0_(.*?).roary/$1/g; s/1_(.*?).roary/$1/g; s/","/\t/g; s/"//g; print' output/gene_presence_absence.csv > presence_absence_unix.csv 
+  perl -ne 's/\r\n/\n/g; s/\"0_(.*?).roary/\"$1/g; s/\"1_(.*?).roary/\"$1/g; s/","/\t/g; s/"//g; print' output/gene_presence_absence.csv > presence_absence_unix.csv 
 
   ## make annotated CDS and ncRNA tables
   ## we will use blast output files for all study & reference strains.
