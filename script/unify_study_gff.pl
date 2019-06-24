@@ -31,17 +31,16 @@ my $count = 1;
 $tag =~ m/(.*?)_.*/; 
 my $prefix = $1; ## locus tag prefix, use same as Prokka 
 
-## read reference fasta (make sure it's not folded!)
-## get length of each sequence 
-for (;;) {
-   my $seq_name = <FA>;
-   last if not defined $seq_name;
-   my $seq = <FA>;
-   last if not defined $seq;
-   $seq_name =~ m/>(.*?)\n/; 
-   my $seq_id = $1; 
-   my $seq_len = length($seq)-1; 
-   $length{$seq_id} = $seq_len; 
+## read reference fasta (possibly folded), get length of each sequence 
+
+my $seq_name;
+ 
+while (<FA>) {
+  if (m/^>(.*?)\n/) {  
+    $seq_name = $1;
+  } else {
+    $length{$seq_name} += length($_)-1;
+  } 
 }
 
 ## parse all blast hits, get rid of the poor quality ones
@@ -141,7 +140,7 @@ while (<GFF>) {
     my @t = split /\t+/;
     if ($t[8] =~ m/ID=(.*?);/) {
       my $lt = $1;
-      ## rename misc_RNA, tmRNA etc into tRNA 
+      ## rename misc_RNA, tmRNA etc into ncRNA 
       $t[2] = "ncRNA" if ($t[2] =~ m/rna/i && $t[2] ne "rRNA" && $t[2] ne "tRNA");  
       $genes->{$lt}->{chr} = $t[0]; 
       $genes->{$lt}->{type} = $t[2]; 
@@ -186,12 +185,19 @@ foreach my $i (keys %{$genes}) {
         $type_match = 1 if ($type1 eq $type2 || ( $type1 eq "CDS" && $type2 eq "pseudogene") || ($type1 eq "pseudogene" && $type2 eq "CDS")); 
 
         ## if one interval is fully contained within another, we drop the smaller one 
-        ## if intervals are exactly the same, random one will be dropped 
-        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 <= $beg2 && $end1 >= $end2 && $type_match) {  
+        ## if intervals are exactly the same, one with no blast anno will be dropped 
+        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 == $beg2 && $end1 == $end2 && $type_match) {  
+          if (defined $blast->{$i}) { 
+            printf STDERR "Strain $tag, overlap detected: kept $i ($chr1,$beg1:$end1), dropped $j ($chr2,$beg2:$end2)\n"; 
+            delete $genes->{$j}; 
+          } else { 
+            printf STDERR "Strain $tag, overlap detected: kept $j ($chr2,$beg2:$end2), dropped $i ($chr2,$beg2:$end2)\n"; 
+            delete $genes->{$i};
+          } 
+        } elsif ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 <= $beg2 && $end1 >= $end2 && $type_match) {  
           printf STDERR "Strain $tag, overlap detected: kept $i ($chr1,$beg1:$end1), dropped $j ($chr2,$beg2:$end2)\n"; 
           delete $genes->{$j}; 
-        } 
-        if ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 >= $beg2 && $end1 <= $end2 && $type_match) {  
+        } elsif ($chr1 eq $chr2 && $strand1 eq $strand2 && $beg1 >= $beg2 && $end1 <= $end2 && $type_match) {  
           printf STDERR "Strain $tag, overlap detected: kept $j ($chr2,$beg2:$end2), dropped $i ($chr1,$beg1:$end1)\n"; 
           delete $genes->{$i}; 
         } 

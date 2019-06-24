@@ -49,6 +49,7 @@ CONFIG=""
 TAG=""
 CPUS=""
 REF=""
+NEWREF=""
 SIMPLE=false
 MULTI=false 
 
@@ -202,6 +203,17 @@ then
     echo "==> Found directory $WDIR/roary/; $WDIR/roary/output will be created."
   fi 
 
+  if [[ $REF != "" ]]
+  then  
+    ## this bit is to check for frameshift alignments of external ref CDS vs study genomes
+    ## if at least one study genome generates a frameshift, CDS in the ref becomes pseudogene
+    cd $WDIR
+    REFNAME=`basename $REF`
+    NEWREF=$WDIR/${REFNAME%%.fa*}.modified.fa
+    $SDIR/script/modify_reference_fasta.sh $SDIR $WDIR $REF $NEWREF
+    ## we are going to use the modified ref fasta from now on 
+  fi 
+  
   cd $WDIR/study_strains
   
   if [[ $REF == "" ]]
@@ -213,7 +225,7 @@ then
   else 
     for i in $STUDY 
     do
-      $SDIR/script/make_study_strain_files.sh $SDIR $WDIR $i $CPUS $REF
+      $SDIR/script/make_study_strain_files.sh $SDIR $WDIR $i $CPUS $NEWREF
     done
   fi
   
@@ -225,12 +237,13 @@ then
   echo
   echo "ALL STUDY STRAIN FILES AND DIRS ARE OK!"  
   echo
-  
-  cd $WDIR/ref_strains
  
+
+  cd $WDIR/ref_strains
+   
   for i in $REFSTR
   do
-    $SDIR/script/make_reference_strain_files.sh $SDIR $WDIR $i $REF
+    $SDIR/script/make_reference_strain_files.sh $SDIR $WDIR $i $NEWREF
     grep -P "\tCDS\t" $WDIR/ref_strains/$i/$i.clean.gff > $WDIR/roary/1_$i.roary.gff 
     echo "##FASTA" >> $WDIR/roary/1_$i.roary.gff
     cat $WDIR/ref_strains/$i/$i.genome.fa >> $WDIR/roary/1_$i.roary.gff
@@ -273,7 +286,7 @@ then
 
   cd $WDIR
   echo "==> Generating a table of CDS orthologs."
-  $SDIR/script/make_ortholog_table.pl $WDIR roary/presence_absence_unix.csv $CONFIG $REF | awk '{if (NR==1) {print} else {print | "sort -k4,4"}}' > orthologs.tsv
+  $SDIR/script/make_ortholog_table.pl $WDIR roary/presence_absence_unix.csv $CONFIG $NEWREF | awk '{if (NR==1) {print} else {print | "sort -k4,4"}}' > orthologs.tsv
   
   
   ## TODO: print stats - how many genes are common for all study strains, how many are unique, how many are seen in 2 and more strains.

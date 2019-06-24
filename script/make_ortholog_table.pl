@@ -100,7 +100,7 @@ foreach my $strain (@study_strains) {
     my @t = split /\t+/;
     $t[8] =~ m/ID=(.*?);/; 
     my $lt = $1; 
-    $genes->{$strain}->{$lt}->{loc} = $t[12];
+    $genes->{$strain}->{$lt}->{loc} = "prophage";
   }  
   close PROP; 
  
@@ -206,7 +206,7 @@ OUTER: while (<ROARY>) {
   chomp;
   ## assuming pre-formatted gene presence-absence file with tabs; get all the empty fields right  
   my @t = split /\t/,$_,-1;
-  my $rname = ($t[0] eq "") ? $t[1] : $t[0]; 
+  my $rname = ($t[1] eq "") ? $t[0] : $t[1];
   ## everything with underscore is to be stripped to original name
   ## ie tnpA_1a, tnpA and tnpA_2 will all become tnpA, and then get a unique new name (tnpA, tnpA_2, tnpA_3, etc) 
   ## dashes and numbers remain intact, so tnpA2 or RyhB-1 remain the same 
@@ -227,7 +227,7 @@ OUTER: while (<ROARY>) {
       ## if we have seen this name for this strain already, keep adding entries
       ## no location is defined for reference strains 
       my $i = 1; 
-      while (defined $names->{$rname}->{$i}->{$strain}) { 
+      while (defined $names->{$rname}->{roary}->{$i}->{$strain}) {
         $i++; 
       } 
       $names->{$rname}->{roary}->{$i}->{$strain}->{lt} = $lt;  
@@ -237,7 +237,7 @@ OUTER: while (<ROARY>) {
       $names->{$rname}->{roary}->{1}->{$strain}->{lt} = $lt;  
       $names->{$rname}->{roary}->{1}->{$strain}->{type} = $genes->{$strain}->{$lt}->{type};  
       $names->{$rname}->{roary}->{1}->{$strain}->{loc} = $genes->{$strain}->{$lt}->{loc} if (defined $genes->{$strain}->{$lt}->{loc}); 
-    }  
+    } 
   }  
 } 
 
