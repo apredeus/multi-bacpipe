@@ -1,6 +1,5 @@
 #!/bin/bash 
 
-source activate roary 
 set -euo pipefail
 
 GRN='\033[1;32m'
@@ -10,8 +9,11 @@ NC='\033[0m' # No Color
 
 if [[ $# < 3 ]]
 then
-  echo 
-  printf "Synopsis: One-command bacterial RNA-Seq reference preparation:\n"
+  echo
+  echo "Version:"
+  echo "  v0.6.0, Alexander Predeus (predeus@gmail.com), 2019"  
+  echo "Synopsis:"
+  echo "  One-command bacterial RNA-Seq reference preparation."
   echo 
   printf "prepare multi-reference for all ${RED}study${NC} and ${GRN}reference${NC} strains listed in the config file, or\n"
   printf "prepare simple reference using reference genome fasta and GFF annotation.\n"
@@ -21,7 +23,7 @@ then
   printf "Usage: ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs] [-r <fasta.fa>]${NC}\n"
   echo   "         - to use reference ncRNA/extra CDS fasta file (see below), or" 
   printf "       ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs] [-r prokka]${NC}\n"
-  echo   "         - to use Prokka to predict non-coding RNAs, or "
+  echo   "         - to use Prokka to predict non-coding RNAs with Rfam, or "
   printf "       ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs]${NC}\n"
   echo   "         - to completely ignore non-coding RNAs, or "
   printf "       ${GRN}prepare_bacterial_reference ${GRN2}--simple <working_directory>  <tag>   [-p CPUs]${NC}\n"
@@ -38,7 +40,7 @@ then
   echo "  -r [X]         (multi-strain only) Additional reference nucleotide sequences to be added to the final annotation via Blastn"
   echo "                 If -r prokka is selected, ncRNAs would be predicted using Rfam functionality in Prokka"
   echo "                 If an external fasta file is provided, each sequence should be named using ><name>.<type> convention"
-  echo "                 Types can be \"CDS\" or \"ncRNA\" - e.g. >RygC.ncRNA, or >trpL.CDS"
+  echo "                 Types can be \"CDS\", \"ncRNA\", or \"misc\" - e.g. >RygC.ncRNA, >trpL.CDS, or fdnG.misc"
   echo  
   echo 
   exit 1

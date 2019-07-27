@@ -1,7 +1,6 @@
 #!/bin/bash 
 
 ## this is ran in <wdir>/study_strains
-source activate prokka 
 set -euo pipefail
 
 SDIR=$1
@@ -58,6 +57,7 @@ then
  
   echo "==> Running Prokka annotation; using --noanno option to discover CDS/rRNA/tRNA, and --rfam to discover ncRNA."
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} --rfam $TAG.genome.fa &> /dev/null 
+ 
   grep -P "\tCDS\t" $TAG.prokka/$TAG.prokka.gff | sed "s/$/;gene_biotype=protein_coding;/g" > $TAG.CDS.gff
   grep -P "\tmisc_RNA\t" $TAG.prokka/$TAG.prokka.gff | sed "s/misc_RNA/ncRNA/g" | sed "s/$/;gene_biotype=noncoding_rna;/g" > $TAG.ncRNA.gff
   N_CDS=`grep -c -P "\tCDS\t" $TAG.CDS.gff`
@@ -75,7 +75,7 @@ then
 else 
   ## Make sure you have correct ncRNA names in the reference fasta - they will be used as a Name in GFF. 
   echo "==> Running Prokka annotation; using --noanno option to discover CDS/rRNA/tRNA."
- 
+
   ## find all CDS using Prodigal's default settings - no Rfam search here 
   prokka --noanno --cpus $CPUS --outdir $TAG.prokka --prefix $TAG.prokka --locustag ${TAG%%_*} $TAG.genome.fa &> /dev/null 
 
@@ -100,7 +100,7 @@ else
 fi
  
 ## we need this format for featureCounts quant
-perl -ne 's/\tCDS\t|\tother\t|\tncRNA\t|\trRNA\t|\ttRNA\t|\tpseudogene\t/\tgene\t/g; print' $TAG.united.gff > $TAG.gene.gff
+perl -ne 's/\tCDS\t|\tother\t|\tncRNA\t|\trRNA\t|\ttRNA\t|\tmisc\t/\tgene\t/g; print' $TAG.united.gff > $TAG.gene.gff
 
 echo "==> Files $TAG.genome.fa, $TAG.united.gff, and $TAG.gene.gff successfully generated."
 

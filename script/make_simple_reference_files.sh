@@ -1,6 +1,5 @@
 #!/bin/bash 
 
-source activate prokka 
 set -euo pipefail
 
 SDIR=$1

@@ -33,22 +33,22 @@ foreach $seq_name (keys %{$protein}) {
   ## we screen for 3 possible types of problems: 
   ## 1) start AA is not IVLM; 2) there's no stop codon; 3) there's a stop (X) in the middle of the seq 
   if ($protein->{$seq_name} !~ m/X$/) { 
-    printf STDERR "Sequence %s (%s) does not end with a stop codon; reference sequence %s type is changed to pseudogene.\n",$seq_name,$protein->{$seq_name},$cds_name; 
-    $names->{$cds_name} = "pseudogene"; 
+    printf STDERR "Sequence %s (%s) does not end with a stop codon; reference sequence %s type is changed to misc.\n",$seq_name,$protein->{$seq_name},$cds_name; 
+    $names->{$cds_name} = "misc"; 
   } elsif ($protein->{$seq_name} !~ m/^[ILVM]/) { 
-    printf STDERR "Sequence %s (%s) does not start with I/V/L/M; reference sequence %s type is changed to pseudogene.\n",$seq_name,$protein->{$seq_name},$cds_name; 
-    $names->{$cds_name} = "pseudogene"; 
+    printf STDERR "Sequence %s (%s) does not start with I/V/L/M; reference sequence %s type is changed to misc.\n",$seq_name,$protein->{$seq_name},$cds_name; 
+    $names->{$cds_name} = "misc"; 
   } elsif ($protein->{$seq_name} =~ m/X[A-Z]/) { 
-    printf STDERR "Sequence %s (%s) has a stop codon in the middle; reference sequence %s type is changed to pseudogene.\n",$seq_name,$protein->{$seq_name},$cds_name; 
-    $names->{$cds_name} = "pseudogene";
+    printf STDERR "Sequence %s (%s) has a stop codon in the middle; reference sequence %s type is changed to misc.\n",$seq_name,$protein->{$seq_name},$cds_name; 
+    $names->{$cds_name} = "misc";
   } 
 } 
 
 while (<REF_FA>) { 
-  ## change ref type to pseudogene for all identified problematic CDS 
+  ## change ref type to misc for all identified problematic CDS 
   if (m/^>(.*?).CDS/) { 
     my $cds_name = $1; 
-    s/^>$cds_name\.CDS/>$cds_name.pseudogene/ if (defined $names->{$cds_name}); 
+    s/^>$cds_name\.CDS/>$cds_name.misc/ if (defined $names->{$cds_name}); 
     print MOD_FA; 
   } else { 
     print MOD_FA; 

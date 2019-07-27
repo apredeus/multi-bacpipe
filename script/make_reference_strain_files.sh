@@ -1,7 +1,6 @@
 #!/bin/bash 
 
 ## this is ran in <wdir>/ref_strains
-source activate prokka 
 set -euo pipefail
 
 SDIR=$1

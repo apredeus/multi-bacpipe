@@ -54,7 +54,7 @@ while (<BLAST>) {
   $t[0] =~ m/^(.*)\.(.*?)$/;
   my $name = $1; 
   my $type = $2;
-  die "ERROR: external reference can be of CDS/ncRNA/pseudogene type only!" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "pseudogene");  
+  die "ERROR: external reference can be of CDS/ncRNA/misc type only!" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "misc");  
   my $len_ratio = $t[3]/$length{$t[0]}; 
 
   ## retain all high identity matches in blast hash 
@@ -93,6 +93,7 @@ foreach my $name (keys %{$blast}) {
     $genes->{$name}->{beg} = $blast->{$name}->{1}->{beg}; 
     $genes->{$name}->{end} = $blast->{$name}->{1}->{end}; 
     $genes->{$name}->{strand} = $blast->{$name}->{1}->{strand}; 
+    $genes->{$name}->{product} = join "","External ref, name=",$name;
   } else {
     ## 2+ hits per name
     my @hits = keys %{$blast->{$name}}; 
@@ -117,12 +118,14 @@ foreach my $name (keys %{$blast}) {
           $genes->{$appended_name}->{beg} = $blast->{$name}->{$hit}->{beg}; 
           $genes->{$appended_name}->{end} = $blast->{$name}->{$hit}->{end}; 
           $genes->{$appended_name}->{strand} = $blast->{$name}->{$hit}->{strand}; 
+          $genes->{$appended_name}->{product} = join "","External ref, name=",$appended_name; 
         } else {  
           $genes->{$name}->{type} = $blast->{$name}->{$hit}->{type}; 
           $genes->{$name}->{chr} = $blast->{$name}->{$hit}->{chr}; 
           $genes->{$name}->{beg} = $blast->{$name}->{$hit}->{beg}; 
           $genes->{$name}->{end} = $blast->{$name}->{$hit}->{end}; 
           $genes->{$name}->{strand} = $blast->{$name}->{$hit}->{strand}; 
+          $genes->{$name}->{product} = join "","External ref, name=",$name; 
         } 
       }  
     }
@@ -146,20 +149,26 @@ while (<GFF>) {
       $genes->{$lt}->{type} = $t[2]; 
       $genes->{$lt}->{beg} = $t[3]; 
       $genes->{$lt}->{end} = $t[4]; 
-      $genes->{$lt}->{strand} = $t[6]; 
-    } elsif ($t[2] eq "repeat_region") { 
+      $genes->{$lt}->{strand} = $t[6];
+ 
+      ## keeping products for tRNA/rRNA in united.gff to generate the name    
+      $t[8] =~ m/product=(.*)$/;
+      $genes->{$lt}->{product} = $1 if ($t[2] eq "tRNA" || $t[2] eq "rRNA"); 
+    } elsif ($t[2] eq "repeat_region") {
+      ## would like to have CRISPR repeats annotated with lt to see expression  
       my $crispr_lt = join "","CRISPR_",$crispr_count; 
       $crispr_count++; 
       $genes->{$crispr_lt}->{chr} = $t[0]; 
-      $genes->{$crispr_lt}->{type} = "other"; 
+      $genes->{$crispr_lt}->{type} = "repeat_region"; 
       $genes->{$crispr_lt}->{beg} = $t[3]; 
       $genes->{$crispr_lt}->{end} = $t[4]; 
       $genes->{$crispr_lt}->{strand} = $t[6];
+      $genes->{$crispr_lt}->{product} = $crispr_lt;
     }  
   }      
 }
 
-## now compare appropriate features and drop FULL overlaps of same-typed features or CDS with pseudogenes
+## now compare appropriate features and drop FULL overlaps of same-typed features or CDS with misc (pseudogenes etc) 
 
 print STDERR "====> Merging blast-based annotation with Prokka-predicted features for strain $tag:\n";
 print STDERR "----------------------------------------------------------------------------------\n";  
@@ -180,9 +189,9 @@ foreach my $i (keys %{$genes}) {
         my $strand2 = $genes->{$j}->{strand};
 
         ## we don't delete ncRNA if it overlaps CDS, and vice versa
-        ## we DO delete CDS overlapping pseudogenes
+        ## we DO delete CDS overlapping misc and misc/CDS
         my $type_match = 0; 
-        $type_match = 1 if ($type1 eq $type2 || ( $type1 eq "CDS" && $type2 eq "pseudogene") || ($type1 eq "pseudogene" && $type2 eq "CDS")); 
+        $type_match = 1 if ($type1 eq $type2 || ( $type1 eq "CDS" && $type2 eq "misc") || ($type1 eq "misc" && $type2 eq "CDS")); 
 
         ## if one interval is fully contained within another, we drop the smaller one 
         ## if intervals are exactly the same, one with no blast anno will be dropped 
@@ -224,7 +233,11 @@ foreach my $key (@keys) {
   $biotype = "protein_coding" if ($type eq "CDS"); 
   
   my $strand = $genes->{$key}->{strand};
-  printf UNITED "%s\tBacpipe\t%s\t%d\t%d\t.\t%s\t.\tID=%s;gene_biotype=%s;\n",$chr,$type,$beg,$end,$strand,$new_lt,$biotype; 
+  if (defined $genes->{$key}->{product}) { 
+    printf UNITED "%s\tBacpipe\t%s\t%d\t%d\t.\t%s\t.\tID=%s;gene_biotype=%s;product=%s;\n",$chr,$type,$beg,$end,$strand,$new_lt,$biotype,$genes->{$key}->{product}; 
+  } else { 
+    printf UNITED "%s\tBacpipe\t%s\t%d\t%d\t.\t%s\t.\tID=%s;gene_biotype=%s;\n",$chr,$type,$beg,$end,$strand,$new_lt,$biotype; 
+  } 
   $count++;
 }
 

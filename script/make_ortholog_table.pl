@@ -35,7 +35,7 @@ while (<FA>) {
   if (m/^>(.*)\.(.*?)$/) { 
     my $name = $1;
     my $type = $2;
-    die "ERROR: You can't have blast types other than CDS/ncRNA/pseudogene!\n" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "pseudogene");
+    die "ERROR: You can't have blast types other than CDS/ncRNA/misc!\n" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "misc");
     #print STDERR "$name\t$type\n";
     $blast_type->{$name} = $type;  
   } 
@@ -167,7 +167,7 @@ foreach my $strain (@ref_strains) {
     my $lt = (split /\t+/)[0]; 
     my $bname = (split /\t+/)[1]; 
     $genes->{$strain}->{$lt}->{bname} = $bname;
-    my $type = $blast_type->{$bname};  ## this is to take care of pseudogenes  
+    my $type = $blast_type->{$bname};  ## this is to take care of pseudogenes/misc  
  
     if ($type ne "CDS" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
       ## if we have seen this name for this strain already, keep adding entries
@@ -217,8 +217,8 @@ OUTER: while (<ROARY>) {
     my $lt = ($t[$index] eq "") ? "NONE" : $t[$index]; 
 
     $genes->{$strain}->{$lt}->{rname} = $rname if ($lt ne "NONE");
-    ## we want to skip pseudogenes - if there's already blast entry associated with at least 1 lt, skip the whole roary line 
-    if (defined $genes->{$strain}->{$lt}->{bname} && $blast_type->{$genes->{$strain}->{$lt}->{bname}} eq "pseudogene") { 
+    ## we want to skip misc - if there's already blast entry associated with at least 1 lt, skip the whole roary line 
+    if (defined $genes->{$strain}->{$lt}->{bname} && $blast_type->{$genes->{$strain}->{$lt}->{bname}} eq "misc") { 
       delete $names->{$rname}->{roary}; 
       next OUTER; 
     } 
@@ -291,8 +291,8 @@ foreach my $name (keys %{$names}) {
     ## both roary and blast are defined for this bee yotch  
     ## (sorry I'm really exhausted at this point) 
     ## if blast_type is CDS we ignore blast part of hash completely 
-    ## otherwise (if it's pseudogene or ncRNA) we ignore roary 
-    ## basically it should only happen for pseudogenes 
+    ## otherwise (if it's misc or ncRNA) we ignore roary 
+    ## basically it should only happen for misc
     if ($blast_type->{$name} eq "CDS") { 
       my $i = 1; 
       while (defined $names->{$name}->{roary}->{$i}) {  

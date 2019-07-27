@@ -5,7 +5,7 @@ A pipeline for uniform multi-strain RNA-seq processing.
 ## Author
 [Alexander Predeus](https://www.researchgate.net/profile/Alexander_Predeus), [Jay Hinton Laboratory](http://www.hintonlab.com/), [University of Liverpool](https://www.liverpool.ac.uk/)
 
-(c) 2018, GPL v3 license
+(c) 2018-2019, GPL v3 license
 
 ## Motivation
 Processing of multi-strain RNA-sequencing experiments is hard, because discrepancies between custom strain annotations introduce many false positive results. No previous approach allowed to analyze both orthologous and non-orthologous genes simultaneously. **Bacpipe** does just that: it processes RNA-seq data of several related strains in a uniform manner that minimizes the number of false positives. The results are generated in a form that's streamlined for downstream heatmap visualization/clustering analysis/PCA/etc in [Phantasus](https://artyomovlab.wustl.edu/phantasus/) or a similar tool, as well as differential gene expression analysis in DESeq2, limma-voom, or edgeR. 
@@ -38,19 +38,23 @@ git clone https://github.com/apredeus/multi-bacpipe
 echo "export PATH=~/multi-bacpipe:~/multi-bacpipe/utils:\$PATH" >> ~/.bashrc
 ```
 
-To install the requirements, use [Bioconda](https://bioconda.github.io/). Below are the programs that need to be installed. In our experience, it's best to have **prokka** and **roary** installed in dedicated virtual environments. Management of virtual environments in Bioconda is described [here](https://conda.io/docs/user-guide/tasks/manage-environments.html).
+To install the requirements, use [Bioconda](https://bioconda.github.io/). Below are the programs that need to be installed. Management of virtual environments in Bioconda is described [here](https://conda.io/docs/user-guide/tasks/manage-environments.html). First, create a separate virtual environment for all the tools:
 
-```bash 
+```bash
+conda create -n bacpipe
+conda activate bacpipe
+```  
+After this, install all the necessary tools in the **bacpipe** environment:
+
+```bash
+conda install -c conda-forge -c bioconda -c defaults prokka
+conda install -c bioconda roary
 conda install fastqc
 conda install star
 conda install samtools
 conda install bedtools
 conda install igvtools
 conda install subread
-conda install blast 
-conda create -n prokka  -c conda-forge -c bioconda prokka
-conda create -n roary   -c bioconda roary
-conda create -n multiqc -c bioconda multiqc
 ```
 **/utils** contains Linux-compiled utilities necessary for file processing: [dos2unix](https://linux.die.net/man/1/dos2unix) converts Roary CSV output to Unix format, and [bedGraphToBigWig](https://github.com/ENCODE-DCC/kentUtils) is called upon when generating bigWig files. 
 

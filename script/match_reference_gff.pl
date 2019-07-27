@@ -50,7 +50,7 @@ while (<BLAST>) {
   $t[0] =~ m/^(.*)\.(.*?)$/;
   my $name = $1; 
   my $type = $2;
-  die "ERROR: external reference can be of CDS/ncRNA/pseudogene type only!" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "pseudogene");  
+  die "ERROR: external reference can be of CDS/ncRNA/misc type only!" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "misc");  
   my $len_ratio = $t[3]/$length{$t[0]}; 
 
   ## retain all high identity matches in blast hash 
@@ -116,7 +116,7 @@ while (<GFF>) {
   foreach my $name (keys %{$blast}) { 
     foreach my $hit (keys %{$blast->{$name}}) {
       my $type_match = 0; 
-      $type_match = 1 if ($type eq $blast->{$name}->{$hit}->{type} || $blast->{$name}->{$hit}->{type} eq "pseudogene"); 
+      $type_match = 1 if ($type eq $blast->{$name}->{$hit}->{type} || $blast->{$name}->{$hit}->{type} eq "misc"); 
       if ($chr eq $blast->{$name}->{$hit}->{chr} && $strand eq $blast->{$name}->{$hit}->{strand} && $type_match) { 
         my $hit_beg = $blast->{$name}->{$hit}->{beg}; 
         my $hit_end = $blast->{$name}->{$hit}->{end};

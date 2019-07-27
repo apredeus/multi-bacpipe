@@ -43,7 +43,7 @@ while (<BLAST_OUT>) {
   my $name = $1; 
   my $type = $2;
   my $chr  = $t[1]; 
-  die "ERROR: external reference can be of CDS/ncRNA/pseudogene type only!" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "pseudogene");  
+  die "ERROR: external reference can be of CDS/ncRNA/misc type only!" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "misc");  
   my $len_ratio = $t[3]/$length{$t[0]}; 
 
   ## retain all high identity matches in blast hash 
