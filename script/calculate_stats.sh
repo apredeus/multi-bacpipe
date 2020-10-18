@@ -38,7 +38,7 @@ then
   N_MULT=$MULT2
 
   ## from the non-strand-specific assignment - should be ok for now
-  N_ASSG=`grep "Successfully assigned fragments" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
+  N_ASSG=`grep "Successfully assigned alignments" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
   
   echo -e "$TAG\t$SPECIES\t$N_ALL\t$N_RRNA\t$N_UNMP\t$N_MULT\t$N_UNIQ\t$N_ASSG" > $TAG.counts 
   
@@ -50,9 +50,9 @@ then
   
   echo -e "$TAG\t$SPECIES\t$P_RRNA\t$P_UNMP\t$P_MULT\t$P_UNIQ\t$P_ASSG" > $TAG.percent
    
-  R0=`grep "Successfully assigned fragments" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
-  R1=`grep "Successfully assigned fragments" $WDIR/strand/logs/$TAG.fc.s1.log | awk '{print $6}'`
-  R2=`grep "Successfully assigned fragments" $WDIR/strand/logs/$TAG.fc.s2.log | awk '{print $6}'`
+  R0=`grep "Successfully assigned alignments" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
+  R1=`grep "Successfully assigned alignments" $WDIR/strand/logs/$TAG.fc.s1.log | awk '{print $6}'`
+  R2=`grep "Successfully assigned alignments" $WDIR/strand/logs/$TAG.fc.s2.log | awk '{print $6}'`
   PCT=`echo "" | awk '{printf "%.3f\n",v1*100/v2}' v1=$R1 v2=$R0`
   
   echo "Strandedness evaluation: R0 is $R0, R1 is $R1, R2 is $R2; percent first strand is $PCT" > $TAG.strand
@@ -69,7 +69,8 @@ else
   N_RRNA=$((N_ALL-N_UNMP-UNI2-MULT2))
   N_UNIQ=$UNI2
   N_MULT=$MULT2
-  N_ASSG=`grep "Successfully assigned reads" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
+  ## starting with certain version of featureCounts, reads were replaced with alignments. 
+  N_ASSG=`grep "Successfully assigned alignments" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
   
   echo -e "$TAG\t$SPECIES\t$N_ALL\t$N_RRNA\t$N_UNMP\t$N_MULT\t$N_UNIQ\t$N_ASSG" > $TAG.counts 
   
@@ -81,9 +82,9 @@ else
   
   echo -e "$TAG\t$SPECIES\t$P_RRNA\t$P_UNMP\t$P_MULT\t$P_UNIQ\t$P_ASSG" > $TAG.percent
    
-  R0=`grep "Successfully assigned reads" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
-  R1=`grep "Successfully assigned reads" $WDIR/strand/logs/$TAG.fc.s1.log | awk '{print $6}'`
-  R2=`grep "Successfully assigned reads" $WDIR/strand/logs/$TAG.fc.s2.log | awk '{print $6}'`
+  R0=`grep "Successfully assigned alignments" $WDIR/strand/logs/$TAG.fc.s0.log | awk '{print $6}'`
+  R1=`grep "Successfully assigned alignments" $WDIR/strand/logs/$TAG.fc.s1.log | awk '{print $6}'`
+  R2=`grep "Successfully assigned alignments" $WDIR/strand/logs/$TAG.fc.s2.log | awk '{print $6}'`
   PCT=`echo "" | awk '{printf "%.3f\n",v1*100/v2}' v1=$R1 v2=$R0`
   
   echo "Strandedness evaluation: R0 is $R0, R1 is $R1, R2 is $R2; percent first strand is $PCT" > $TAG.strand
