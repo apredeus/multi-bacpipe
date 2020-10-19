@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-set -euo pipefail
+set -eo pipefail
 
 GRN='\033[1;32m'
 GRN2='\033[0;32m'
@@ -11,7 +11,7 @@ if [[ $# < 3 ]]
 then
   echo
   echo "Version:"
-  echo "  v0.6.0, Alexander Predeus (predeus@gmail.com), 2019"  
+  echo "  v0.7.0, Alexander Predeus (predeus@gmail.com), 2020"  
   echo "Synopsis:"
   echo "  One-command bacterial RNA-Seq reference preparation."
   echo 
@@ -137,6 +137,12 @@ then
   exit 1 
 fi 
 
+if [[ $TAG == "" || ! -s $WDIR/study_strains/$TAG.fa || ! -s $WDIR/study_strains/$TAG.gff ]]
+then 
+  >&2 echo "ERROR: you must specify the strain TAG and provide genome  <TAG>.fa and annotation <TAG>.gff in /study_strains sub-directory!"
+  exit 1 
+fi 
+
 WDIR=`readlink -f $WDIR`
 
 if [[ $CONFIG == "" && $TAG == "" ]] 
@@ -176,7 +182,7 @@ then
   
   if [[ ! -s $WDIR/$CONFIG ]]
   then
-    >&2 echo "ERROR: Config file must be located in the working directory!" 
+    >&2 echo "ERROR: Non-empty config file must be provided in the working directory!" 
     exit 1 
   fi
   

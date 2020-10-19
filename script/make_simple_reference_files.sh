@@ -51,9 +51,9 @@ then
 fi
 mkdir $TAG.STAR 
 
+## STAR needs some adjustment for small genomes; NSAI is the factor
 NSAI=`awk '{sum+=$2} END {printf "%d\n",log(sum)/(2*log(2))-3}' $TAG.genome.fa.fai`
 STAR --runThreadN $CPUS --runMode genomeGenerate --genomeDir $TAG.STAR --genomeFastaFiles $TAG.genome.fa --genomeSAindexNbases $NSAI &> /dev/null
-mv Log.out $TAG.star.log 
 echo "==> STAR aligner index $TAG.STAR successfully generated"
 
 ##make rRNA/tRNA interval file  
@@ -62,8 +62,7 @@ echo "==> rRNA/tRNA operon interval file $TAG.rRNA.bed successfully created"
 
 ## mv all to the ref dir 
 mv $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $TAG.gene.gff $WDIR/study_strains/$TAG
-mv $TAG.prokka ${TAG}.STAR $TAG.star.log $WDIR/study_strains/$TAG
-mv $TAG.rRNA.bed $WDIR/study_strains/$TAG
+mv $TAG.prokka ${TAG}.STAR $TAG.rRNA.bed $WDIR/study_strains/$TAG
 
 echo "All the generated files and indexes have been moved to $WDIR/study_strains/$TAG."
 echo "Strain $TAG: all done generating reference!" 

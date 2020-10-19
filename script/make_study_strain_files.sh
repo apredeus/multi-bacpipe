@@ -116,7 +116,6 @@ mkdir ${TAG}.STAR
 NSAI=`awk '{sum+=$2} END {printf "%d\n",log(sum)/(2*log(2))-3}' $TAG.genome.fa.fai`
 
 STAR --runThreadN $CPUS --runMode genomeGenerate --genomeDir ${TAG}.STAR --genomeFastaFiles $TAG.genome.fa --genomeSAindexNbases $NSAI &> /dev/null
-mv Log.out $TAG.star.log 
 echo "==> STAR aligner index $TAG.STAR successfully generated"
 
 ##make rRNA/tRNA interval file  
@@ -128,8 +127,7 @@ echo "==> Making combined rRNA operon interval file: Identified $N_OP rRNA opero
 ## mv all necessary files to the appropriate ref dirs 
 mv $TAG.gene.gff $TAG.united.gff $TAG.CDS.gff $TAG.ncRNA.gff $TAG.prophage_overlap.tsv $WDIR/study_strains/$TAG || : ## hope you are as confused as I was, lol 
 mv $TAG.match.tsv $TAG.ref_blast.out $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $WDIR/study_strains/$TAG
-mv $TAG.prokka ${TAG}.STAR $TAG.star.log $WDIR/study_strains/$TAG
-mv $TAG.rRNA.bed $WDIR/study_strains/$TAG
+mv $TAG.prokka ${TAG}.STAR $TAG.rRNA.bed $WDIR/study_strains/$TAG
 
 echo "==> All the generated files and indexes have been moved to $WDIR/study_strains/$TAG."
 echo "==> Strain $TAG: all reference files successfully generated!"

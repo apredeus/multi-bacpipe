@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-set -euo pipefail
+set -eo pipefail
 
 ## This is the master script for the bacterial RNA-seq processing pipeline. 
 ## It reports the master log, determines if it's OK to proceed, and calls all the sub-scripts. 
@@ -16,7 +16,7 @@ if [[ $# < 2 ]]
 then
   echo
   echo "Version:"
-  echo "  v0.6.0, Alexander Predeus (predeus@gmail.com), 2019" 
+  echo "  v0.7.0, Alexander Predeus (predeus@gmail.com), 2020" 
   echo "Synopsis:"
   echo "  Process multistrain bacterial RNA-seq data using pre-created reference."
   echo "Usage:" 
@@ -39,8 +39,8 @@ echo "==========================================================================
 echo "=================================================================================="
 echo "===                                                                            ==="
 echo "===                             Welcome to BACPIPE!                            ==="
-echo "===      Version 0.6.0 - with multi-strain and simple reference support        ==="
-echo "===          2018-19 (c)  Alexander Predeus, Jay Hinton Lab, Liverpool         ==="
+echo "===      Version 0.7.0 - with multi-strain and simple reference support        ==="
+echo "===          2018-20 (c)  Alexander Predeus, Jay Hinton Lab, Liverpool         ==="
 echo "===  For more information, visit https://github.com/apredeus/multi-bacpipe     ==="
 echo "===                        Publication in preparation.                         ==="
 echo "===                                                                            ==="
@@ -92,8 +92,6 @@ done
 
 WDIR=$1
 CONFIG=$2
-WDIR=`readlink -f $WDIR`
-CONFIG=`readlink -f $CONFIG`
 REFDIR=$WDIR/study_strains
 
 SDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -103,6 +101,9 @@ then
   >&2 echo "ERROR: You must specify a non-empty working directory and appropriate config file!"
   exit 1  
 fi  
+
+WDIR=`readlink -f $WDIR`
+CONFIG=`readlink -f $CONFIG`
 
 if [[ $CPUS == "" ]]
 then 
@@ -202,16 +203,17 @@ reads matching the coding strand: "sum/NR", lowest: "min", highest: "max}'
 
 STRAND=`cat *.strand | awk '{sum+=$16} END {x=sum/NR; if (x<10) \
 {print "RF"} else if (x>90) {print "FR"} else if (x>45 && x<55) \
-{print "NONE"} else {print "ERROR"}}'` 
+{print "NONE"} else {print "WARN"}}'` 
 
-if [[ $STRAND == "ERROR" ]]
+if [[ $STRAND == "WARN" ]]
 then
-  echo "ERROR: something is very much off with the strand-specificity of your RNA-seq!"
-  echo "       This means that average strand-specificity of the dataset does not fall into"
-  echo "       one of the following intervals: [0%,10%), (45%,55%), or (90%,100%]."
-  echo "       This is very irregular; please investigate why is this happening using contents"
-  echo "       of <wdir>/strand and <wdir>/stats directories." 
-  exit 1
+  echo "WARNING: something is very much off with the strand-specificity of your RNA-seq!"
+  echo "         This means that average strand-specificity of the dataset does not fall into"
+  echo "         one of the following intervals: [0%,10%), (45%,55%), or (90%,100%]."
+  echo "         This is very irregular; please investigate why is this happening using contents"
+  echo "         of <wdir>/strand and <wdir>/stats directories." 
+  ## in case of weird things happening, treat as non-strand-specific
+  STRAND="NONE"
 else 
   echo "The strandedness of your experiment was determined to be $STRAND"
 fi
