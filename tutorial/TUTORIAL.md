@@ -59,4 +59,40 @@ mv Sample*fastq.gz fastqs
 mv P125109* study_strains
 ```
 
-We should be all set to go. Let's run the reference preparation.   
+We should be all set to go. Let's run the reference preparation in `--simple` mode. Make sure you are in your main working directory - **ent_tutorial**. 
+
+`prepare_bacterial_reference --simple `pwd` P125109 -p 8`
+
+Your logs should look something like this: 
+
+> ==> Initiating bacpipe reference preparation for SIMPLE SINGLE-STRAIN workflow!
+> ==> Following variables were set:
+> 
+>       WDIR: /pub37/alexp/data/rnaseq/other_Salmonella/6strains_SE
+>        TAG: P125109
+>       CPUS: 8
+> 
+> ==> Parallel jobs will be ran on 8 cores.
+> Directory /pub37/alexp/data/rnaseq/other_Salmonella/6strains_SE/study_strains/P125109 was not found and will be created.
+> ==> Running Prokka annotation to identify tRNA and rRNA loci
+> P125109.gff annotation file processed; found 22 gene entries without a locus tag, for which new locus tags were generated.
+> GFF output stats: 4200 protein coding, 125 pseudogenes, 0 noncoding RNAs, 0 tRNAs, 22 rRNAs, 0 others.
+> ==> Files P125109.genome.fa and P125109.gene.gff successfully generated
+> ==> STAR aligner index P125109.STAR successfully generated
+> ==> rRNA/tRNA operon interval file P125109.rRNA.bed successfully created
+> All the generated files and indexes have been moved to /pub37/alexp/data/rnaseq/other_Salmonella/6strains_SE/study_strains/P125109.
+> Strain P125109: all done generating reference!
+> ==> Checking study strain P125109:
+> - all necessary annotation files and directories for P125109 exist and are not empty.
+> ==> Writing simple config file, simple.cfg
+> ==> DONE generating simple single-strain reference!
+
+You will find that inside */study_strains* subdirectory, there is now a directory named P125109 that contains all the neccessary reference files (STAR index, Prokka annotation, rRNA intervals, etc). You will also find *simple.cfg* config file written in your main working directory. 
+
+We're all ready to go now! Go to **ent_tutorial** and run bacpipe like this (adjust the number of cores used according to what's available on your system): 
+
+`bacpipe . simple.cfg -p 64`
+
+
+
+
