@@ -129,10 +129,12 @@ foreach my $lt (@keys) {
     ## print out every gene entry, even rRNA and tRNA (they won't have expression since reads are removed from BAM)
     ## merge pseudogene halves into one "gene" entry with the same locus tag if LT of halves are the same 
     ## above treatment of pseudogenes ONLY APPLIES WHEN --SIMPLE IS IN USE! 
-    if ($gene_length <= 50000) { 
+    if ($gene_length <= 50000 && $biotype ne "rRNA" && $biotype ne "tRNA") { 
       print $out; 
-    } else { 
+    } elsif ($gene_length > 50000) { 
       print STDERR "WARNING: Skipping gene $lt; length $gene_length is over 50000 - possible annotation bug?\n"; 
+    } elsif ($biotype eq "rRNA" || $biotype eq "tRNA") { 
+      print STDERR "WARNING: Skipping gene $lt (rRNA/tRNA).\n"; 
     } 
   }
 } 

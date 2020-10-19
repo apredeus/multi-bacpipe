@@ -45,7 +45,7 @@ Clone the pipeline scripts into your home directory and add them to $PATH variab
 ```bash
 cd ~
 git clone https://github.com/apredeus/multi-bacpipe
-echo "export PATH=~/multi-bacpipe:~/multi-bacpipe/utils:\$PATH" >> ~/.bashrc
+echo "export PATH=~/multi-bacpipe:\$PATH" >> ~/.bashrc
 ```
 
 To install the requirements, use [Bioconda](https://bioconda.github.io/). Below are the programs that need to be installed. Management of virtual environments in Bioconda is described [here](https://conda.io/docs/user-guide/tasks/manage-environments.html). First, create a separate virtual environment for all the tools:
@@ -70,8 +70,6 @@ conda install subread=2.0.1
 conda install emboss=6.6.0
 conda install diamond=2.0.4
 ```
-**/utils** contains Linux-compiled utilities necessary for file processing: [dos2unix](https://linux.die.net/man/1/dos2unix) converts Roary CSV output to Unix format, and [bedGraphToBigWig](https://github.com/ENCODE-DCC/kentUtils) is called upon when generating bigWig files. 
-
 ## Tutorial
 
 For the easiest introduction, please follow the bacpipe [tutorial](https://github.com/apredeus/multi-bacpipe/blob/master/tutorial/TUTORIAL.md). 
