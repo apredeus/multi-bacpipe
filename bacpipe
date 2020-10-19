@@ -12,7 +12,7 @@ GRN2='\033[0;32m'
 UL='\033[4;34m'
 NC='\033[0m' # No Color
 
-if [[ $# < 2 ]] 
+if [[ $# < 2 && $1 != "clean" ]] 
 then
   echo
   echo "Version:"
@@ -32,6 +32,11 @@ then
   echo  
   printf "See ${UL}github.com/apredeus/multi-bacpipe${NC} for more information.\n"
   echo 
+  exit 1
+elif [[ $1 == "clean" ]]
+then 
+  echo "Cleaning up the working directory..."
+  rm -rf bams exp_tables FastQC featureCounts stats strand tdfs_and_bws
   exit 1
 fi
 
@@ -92,11 +97,10 @@ done
 
 WDIR=$1
 CONFIG=$2
-REFDIR=$WDIR/study_strains
 
 SDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-if [[ $WDIR == "" || $CONFIG == "" || ! -d $REFDIR || ! "$(ls -A $REFDIR)" ]]
+if [[ $WDIR == "" || $CONFIG == "" ]]
 then
   >&2 echo "ERROR: You must specify a non-empty working directory and appropriate config file!"
   exit 1  
@@ -104,6 +108,7 @@ fi
 
 WDIR=`readlink -f $WDIR`
 CONFIG=`readlink -f $CONFIG`
+REFDIR=$WDIR/study_strains
 
 if [[ $CPUS == "" ]]
 then 
