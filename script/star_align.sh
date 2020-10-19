@@ -47,10 +47,11 @@ then
   exit 1
 fi
 
-echo -e "command: STAR --genomeDir $REF --readFilesIn $READS --alignIntronMin 20 --alignIntronMax 19 --readFilesCommand zcat --runThreadN $CPUS --outFilterMultimapNmax 20 --outReadsUnmapped Fastx"
 STAR --genomeDir $REF --readFilesIn $READS --alignIntronMin 20 --alignIntronMax 19 --readFilesCommand zcat --runThreadN $CPUS --outFilterMultimapNmax 20 --outSAMtype BAM Unsorted &> /dev/null 
 ## only take the reads that don't overlap rRNA operons 
 bedtools intersect -nonamecheck -v -a Aligned.out.bam -b $RRNA | samtools sort -@ $CPUS - > $TAG.bam
 samtools index $TAG.bam
 rm Aligned.out.bam
 mv Log.final.out $TAG.star.log 
+
+echo -e "command: STAR --genomeDir $REF --readFilesIn $READS --alignIntronMin 20 --alignIntronMax 19 --readFilesCommand zcat --runThreadN $CPUS --outFilterMultimapNmax 20 --outReadsUnmapped Fastx"

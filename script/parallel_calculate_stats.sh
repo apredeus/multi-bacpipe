@@ -32,6 +32,7 @@ rm $$.counts.tmp
 
 echo 
 echo "Read percentage statistics for the processed dataset:"
+echo
 echo -e "Sample\tStrain\trRNA\tunmapped\tmultimap\t1_loc\tassigned" > $$.percent.tmp
 echo -e "===================\t========\t=======\t=======\t=======\t=======\t=======" >> $$.percent.tmp
 cat *.percent >> $$.percent.tmp

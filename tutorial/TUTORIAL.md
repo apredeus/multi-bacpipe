@@ -70,7 +70,9 @@ Your logs should look something like this:
 > ==> Following variables were set:
 > 
 >        WDIR: /pub37/alexp/data/rnaseq/other_Salmonella/6strains_SE
+>
 >        TAG: P125109
+>
 >        CPUS: 8
 > 
 > ==> Parallel jobs will be ran on 8 cores.
@@ -95,7 +97,7 @@ Your logs should look something like this:
 > 
 > ==> Checking study strain P125109:
 > 
-> - all necessary annotation files and directories for P125109 exist and are not empty.
+> \- all necessary annotation files and directories for P125109 exist and are not empty.
 > 
 > ==> Writing simple config file, simple.cfg
 > 

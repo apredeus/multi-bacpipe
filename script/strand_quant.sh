@@ -16,7 +16,9 @@ if [[ -e $TAG.R1.fastq.gz && -e $TAG.R2.fastq.gz ]]
 then
   ## in case of PE library, you want to be counting fragments 
   PAIRED="-p" 
-  echo "featureCounts: processing sample $TAG, PE options: $PAIRED" 
+  echo "featureCounts: processing paired-end sample $TAG, using all 3 strand-specificity settings." 
+else 
+  echo "featureCounts: processing single-end sample $TAG, using all 3 strand-specificity settings." 
 fi
 
 cd $WDIR/bams 
@@ -33,3 +35,7 @@ fi
 featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 0 -a $REF -o $TAG.fc.s0.tsv $TAG.bam &> $TAG.fc.s0.log
 featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 1 -a $REF -o $TAG.fc.s1.tsv $TAG.bam &> $TAG.fc.s1.log
 featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 2 -a $REF -o $TAG.fc.s2.tsv $TAG.bam &> $TAG.fc.s2.log
+
+echo "command: featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 0 -a $REF -o $TAG.fc.s0.tsv $TAG.bam &> $TAG.fc.s0.log"
+echo "command: featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 1 -a $REF -o $TAG.fc.s1.tsv $TAG.bam &> $TAG.fc.s1.log"
+echo "command: featureCounts $PAIRED -O -M --fraction -t gene -g ID -s 2 -a $REF -o $TAG.fc.s2.tsv $TAG.bam &> $TAG.fc.s2.log" 

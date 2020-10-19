@@ -1,7 +1,7 @@
 #!/usr/bin/env perl 
 
 ## similar to reference_gff_cleanup.pl, but with some differences 
-## basically all "gene" features are included, and "gene" borders are those defined in GFF (eg with UTR for LT2)  
+## basically all "gene" features but rRNA/tRNA are included, and "gene" borders are those defined by gene feature in GFF (eg with UTR for LT2)  
 ## features that have the same locus_tag (usually halves of a pseudogene) are UNIFIED into one feature that would be quantified as 1 entity
 ## "gene" entries with no locus_tag are GIVEN a new locus tag based on their ID (usually gene*) - now LT looks like NOTAG_gene123 
 ## "ncRNA" are all things that match *rna (non-case-spec), but not rRNA/tRNA. 
@@ -91,6 +91,7 @@ my @keys = sort { $genes->{$a}->{chr} cmp $genes->{$b}->{chr} || $genes->{$a}->{
 foreach my $lt (@keys) {
   if ($lt ne "NONE") { 
     my $out = sprintf "%s\tBacpipe\tgene\t%s\t%s\t.\t%s\t.\t",$genes->{$lt}->{chr},$genes->{$lt}->{beg},$genes->{$lt}->{end},$genes->{$lt}->{strand};
+    my $gene_length = $genes->{$lt}->{end} - $genes->{$lt}->{beg}; 
     $out = join ('',$out,"ID=",$lt,";");
     my $name = ($genes->{$lt}->{name} eq "NONE") ? $lt : $genes->{$lt}->{name}; 
     $out = join ('',$out,"Name=",$name,";");
@@ -128,7 +129,11 @@ foreach my $lt (@keys) {
     ## print out every gene entry, even rRNA and tRNA (they won't have expression since reads are removed from BAM)
     ## merge pseudogene halves into one "gene" entry with the same locus tag if LT of halves are the same 
     ## above treatment of pseudogenes ONLY APPLIES WHEN --SIMPLE IS IN USE! 
-    print $out; 
+    if ($gene_length <= 50000) { 
+      print $out; 
+    } else { 
+      print STDERR "WARNING: Skipping gene $lt; length $gene_length is over 50000 - possible annotation bug?\n"; 
+    } 
   }
 } 
 

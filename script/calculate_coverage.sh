@@ -4,6 +4,7 @@ TAG=$1
 WDIR=$2
 REFDIR=$3
 SPECIES=$4
+CPUS=$5
 CHROM=$REFDIR/$SPECIES/${SPECIES}.chrom.sizes
 cd $WDIR/bams 
 
@@ -20,12 +21,12 @@ SCF=`echo $BPS | awk '{printf "%.3f\n",1000000000/$1}'`
 echo "Making bigWig and TDF files for sample $TAG.." 
 echo "$TAG: scaling bigWig files by 10^9/n.aligned.bases, coefficient is $SCF"
 
-bedtools genomecov -scale  $SCF -ibam $TAG.bam -bg -strand + > $TAG.plus.bedGraph 
-bedtools genomecov -scale -$SCF -ibam $TAG.bam -bg -strand - > $TAG.minus.bedGraph 
+## deeptools does it faster and result is the same - and no need for an extra utility
+bamCoverage --scaleFactor  $SCF -p $CPUS --filterRNAstrand reverse -b $TAG.bam -bs 1 -o $TAG.plus.bw  &>  $TAG.cov.log
+bamCoverage --scaleFactor -$SCF -p $CPUS --filterRNAstrand forward -b $TAG.bam -bs 1 -o $TAG.minus.bw &>> $TAG.cov.log
+igvtools count -z 5 -w 1 -e 0 $TAG.bam $TAG.tdf $CHROM &>> $TAG.cov.log  
 
-bedGraphToBigWig $TAG.plus.bedGraph  $CHROM $TAG.plus.bw
-bedGraphToBigWig $TAG.minus.bedGraph $CHROM $TAG.minus.bw
-rm $TAG.plus.bedGraph $TAG.minus.bedGraph
-
-echo -e "command: igvtools count -z 5 -w 1 -e 0 $TAG.bam $TAG.tdf $CHROM &> $TAG.tdf.log\n" > $TAG.tdf.log
-igvtools count -z 5 -w 1 -e 0 $TAG.bam $TAG.tdf $CHROM &>> $TAG.tdf.log  
+echo
+echo -e "command: bamCoverage --scaleFactor  $SCF -p $CPUS --filterRNAstrand reverse -b $TAG.bam -bs 1 -o $TAG.plus.bw  &> $TAG.cov.log"
+echo -e "command: bamCoverage --scaleFactor -$SCF -p $CPUS --filterRNAstrand forward -b $TAG.bam -bs 1 -o $TAG.minus.bw &>> $TAG.cov.log"
+echo -e "command: igvtools count -z 5 -w 1 -e 0 $TAG.bam $TAG.tdf $CHROM &>> $TAG.cov.log\n"

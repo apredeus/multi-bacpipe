@@ -58,17 +58,17 @@ conda activate bacpipe
 After this, install all the necessary tools in the **bacpipe** environment:
 
 ```bash
-conda install -c conda-forge -c bioconda -c defaults prokka
-conda install -c bioconda roary
-conda install deeptools
-conda install fastqc
-conda install star
-conda install samtools
-conda install bedtools
-conda install igvtools
-conda install subread
-conda install emboss
-conda install diamond
+conda install -c conda-forge -c bioconda -c defaults prokka=1.14.6
+conda install -c bioconda roary=3.13.0
+conda install deeptools=3.5.0
+conda install fastqc=0.11.9
+conda install star=2.7.6a
+conda install samtools=1.11
+conda install bedtools=2.29.2
+conda install igvtools=2.3.93
+conda install subread=2.0.1
+conda install emboss=6.6.0
+conda install diamond=2.0.4
 ```
 **/utils** contains Linux-compiled utilities necessary for file processing: [dos2unix](https://linux.die.net/man/1/dos2unix) converts Roary CSV output to Unix format, and [bedGraphToBigWig](https://github.com/ENCODE-DCC/kentUtils) is called upon when generating bigWig files. 
 
