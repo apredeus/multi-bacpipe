@@ -6,7 +6,7 @@
 
 use strict; 
 use warnings; 
-#use Data::Dumper; 
+use Data::Dumper; 
 
 if ($#ARGV != 1) {
   die "USAGE: make_rrna_operon.pl <prokka_gff> <gene_gff>\n";
@@ -53,9 +53,9 @@ while (<GEN_GFF>) {
     my @t = split /\t+/;
     if ($t[8] =~ m/ID=(.*?);/) {
       ## in case of Prokka/unified GFF collusions happen that made the script produce bugs  
-      my $id = "GENE".$1;
+      my $id = "GENE_".$1;
       $genes->{$id}->{chr} = $t[0];
-      $genes->{$id}->{beg} = $t[3]-1;
+      $genes->{$id}->{beg} = $t[3] - 1;
       $genes->{$id}->{end} = $t[4];
   
       if ($t[2] eq "tRNA" || $t[8] =~ m/gene_biotype=tRNA/) {
@@ -77,11 +77,10 @@ foreach my $rtrna (@rtrna) {
   my $d_right = 1000000; 
   my $rbeg = $genes->{$rtrna}->{beg};
   my $rend = $genes->{$rtrna}->{end};
-  
   foreach my $key (keys %{$genes}) { 
     my $cbeg = $genes->{$key}->{beg}; 
     my $cend = $genes->{$key}->{end}; 
-    if ($genes->{$key}->{chr} eq $genes->{$rtrna}->{chr} && $genes->{$key}->{type} ne "rRNA" && $genes->{$key}->{type} ne "tRNA") { 
+    if ($genes->{$key}->{chr} eq $genes->{$rtrna}->{chr} && $genes->{$key}->{type} ne "rRNA" && $genes->{$key}->{type} ne "tRNA" && $cend-$cbeg <= 50000) { 
       my $max_beg = ($rbeg > $cbeg) ? $rbeg : $cbeg; 
       my $min_end = ($rend < $cend) ? $rend : $cend; 
       if ( $min_end >= $max_beg ) {

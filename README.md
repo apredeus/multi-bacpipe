@@ -30,7 +30,7 @@ When successfully applied, this should generate (for each strain):
 * GFF annotation file for each study strain; 
 * genomic BAM files for read-resolution visualization and analysis;
 * TDF files for quick and scalable visualization in IGV;
-* scaled bigWig files for visualization in JBrowse (see [doi:10.1128/mBio.01442-14](http://mbio.asm.org/content/5/4/e01442-14.full) for description of scaling); 
+* scaled, strand-specific bigWig files for visualization in JBrowse (see [doi:10.1128/mBio.01442-14](http://mbio.asm.org/content/5/4/e01442-14.full) for description of scaling); 
 * raw read and TPM expression tables using [featureCounts](http://subread.sourceforge.net/) and accounting for multi-mapping reads; 
 
 Additionally, the following things will be generated:
@@ -38,9 +38,6 @@ Additionally, the following things will be generated:
 * informative alignment statistics, including rRNA/tRNA content, number of multimappers, fraction of successfully assigned reads, etc.; 
 * a single [MultiQC](http://multiqc.info/) quality control report.
 
-## Tutorial
-
-For the easiest introduction, please follow the tutorial from this repository. 
 
 ## Installation and dependencies
 Clone the pipeline scripts into your home directory and add them to $PATH variable in bash: 
@@ -54,6 +51,7 @@ echo "export PATH=~/multi-bacpipe:~/multi-bacpipe/utils:\$PATH" >> ~/.bashrc
 To install the requirements, use [Bioconda](https://bioconda.github.io/). Below are the programs that need to be installed. Management of virtual environments in Bioconda is described [here](https://conda.io/docs/user-guide/tasks/manage-environments.html). First, create a separate virtual environment for all the tools:
 
 ```bash
+conda update conda
 conda create -n bacpipe
 conda activate bacpipe
 ```  
@@ -62,6 +60,7 @@ After this, install all the necessary tools in the **bacpipe** environment:
 ```bash
 conda install -c conda-forge -c bioconda -c defaults prokka
 conda install -c bioconda roary
+conda install deeptools
 conda install fastqc
 conda install star
 conda install samtools
@@ -72,6 +71,10 @@ conda install emboss
 conda install diamond
 ```
 **/utils** contains Linux-compiled utilities necessary for file processing: [dos2unix](https://linux.die.net/man/1/dos2unix) converts Roary CSV output to Unix format, and [bedGraphToBigWig](https://github.com/ENCODE-DCC/kentUtils) is called upon when generating bigWig files. 
+
+## Tutorial
+
+For the easiest introduction, please follow the bacpipe [tutorial](https://github.com/apredeus/multi-bacpipe/blob/master/tutorial/TUTORIAL.md). 
 
 ## Setting up the working directory
 After you have chosen your working directory (**with enough space and where you have write permissions**), you need to create a sub-directory named **fastqs**. 
@@ -144,8 +147,8 @@ The following steps are performed during the pipeline execution:
 * tdf files are prepared for visualization in IGV; 
 * Normalized bigWig (bw) files are prepared for vizualization in majority of other genomic browsers; 
 * featureCounts is ran on genomic bam to evaluate the strandedness of the experiment; 
-* strandedness and basic alignment statistics are calculated; 
-* featureCounts output is chosen based correct settings of strandedness; 
+* strandedness and advanced alignment statistics are calculated; 
+* featureCounts output is chosen based on the established strandedness; 
 * appropriately formatted logs are generated; 
 * multiqc is ran to summarize everything as a nicely formatted report. 
     
