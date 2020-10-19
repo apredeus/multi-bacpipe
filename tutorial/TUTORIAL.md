@@ -69,9 +69,9 @@ Your logs should look something like this:
 >
 > ==> Following variables were set:
 > 
->        WDIR: /pub37/alexp/data/rnaseq/other_Salmonella/6strains_SE
->        TAG: P125109
->        CPUS: 8
+>        WDIR: /pub37/alexp/data/rnaseq/other_Salmonella/6strains_SE
+>        TAG: P125109
+>        CPUS: 8
 > 
 > ==> Parallel jobs will be ran on 8 cores.
 >
@@ -81,7 +81,7 @@ Your logs should look something like this:
 > 
 > P125109.gff annotation file processed; found 22 gene entries without a locus tag, for which new locus tags were generated.
 > 
-> GFF output stats: 4200 protein coding, 125 pseudogenes, 0 noncoding RNAs, 0 tRNAs, 22 rRNAs, 0 others.
+> Parsed GFF stats: 4200 protein coding, 125 pseudogenes, 0 noncoding RNAs, 0 tRNAs, 22 rRNAs, 0 others.
 > 
 > ==> Files P125109.genome.fa and P125109.gene.gff successfully generated
 > 

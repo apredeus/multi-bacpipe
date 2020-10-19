@@ -132,6 +132,6 @@ foreach my $lt (@keys) {
   }
 } 
 
-print STDERR "GFF output stats: $coding protein coding, $pseudo pseudogenes, $ncrna noncoding RNAs, $trna tRNAs, $rrna rRNAs, $other others.\n"; 
+print STDERR "Parsed GFF stats: $coding protein coding, $pseudo pseudogenes, $ncrna noncoding RNAs, $trna tRNAs, $rrna rRNAs, $other others.\n"; 
 
 close GFF; 
