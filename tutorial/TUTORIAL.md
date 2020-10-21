@@ -95,6 +95,54 @@ This should follow the steps outlined in the main README, while printing logs to
 
 `bacpipe . simple.cfg -p 64 &> bacpipe.log`
 
+After this, you should obtain several folders with the processed RNA-seq data. 
+
+* **FastQC** contains the output of fastqc intial read quality control;
+* **bams** contains rRNA/tRNA-filtered indexed BAM files used for visualization, as well as STAR alignment logs;
+* **tdfs_and_bws** contain TDF files (to be visualized in IGV), and straind-specific, normalized bigWig files (can be visualized in almost any genome browser); 
+* **strand** and **featureCounts** contain the results of `featureCounts` quantification. The former contains tables for all possible strand-specificities, and the latter contains only the quantificaion for the correct strand; 
+* **exp_tables** contains annotated and non-annotated expression tables in the form of raw counts and TPMs; 
+* **stats** contains statistics calculated per individual sample. A summary of these statistics is given in the final log. 
+
+## Multi-strain ("multi") workflow
+
+Processing differs significantly for multiple strains. In order to demonstrate how it works, we will use a small part of [GSE119724](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE119724) dataset, in which expression in *Salmonella* Typhimurium strains 4/74 and D23580 was compared under various *in vitro* conditions and inside macrophages. For simplicity, we will only use 6 samples of bacteria grown inside macrophages. 
+
+First of all, let's choose a directory with plenty (~ 100 Gb) of space and enter it.
+
+```bash 
+mkdir stm_tutorial
+cd stm_tutorial
+```
+
+After this, download the fastq files using `sra-tools` from NCBI. These tools could be installed with `conda install sra-tools`. If you get an error about unknown option, replace `--split-3` with `--split-e`.
 
 
+Let's download the data: 
 
+```bash 
+fastq-dump --split-3 SRR7814119 & 
+fastq-dump --split-3 SRR7814120 & 
+fastq-dump --split-3 SRR7814121 & 
+fastq-dump --split-3 SRR7814152 & 
+fastq-dump --split-3 SRR7814153 & 
+fastq-dump --split-3 SRR7814154 &
+wait
+```
+
+After all of the downloading is done, let's give the files more informative names and archive them:
+```bash 
+mv SRR7814119.fastq D23_mac_rep1.fastq
+mv SRR7814120.fastq D23_mac_rep2.fastq
+mv SRR7814121.fastq D23_mac_rep3.fastq
+mv SRR7814152.fastq 474_mac_rep1.fastq
+mv SRR7814153.fastq 474_mac_rep2.fastq 
+mv SRR7814154.fastq 474_mac_rep3.fastq
+gzip *fastq
+```
+
+While the files are compressed, let's download the reference files we shall need for the multi-strain processing. First, create **study_strains** and **ref_strains** directories inside our main working directory, **stm_tutorial**. After this, let's download genome assemblies and GFF annotations (GenBank versions) of D23580 and 4/74. 
+
+```bash
+mkdir study_strains ref_strains
+```

@@ -133,8 +133,8 @@ foreach my $lt (@keys) {
       print $out; 
     } elsif ($gene_length > 50000) { 
       print STDERR "WARNING: Skipping gene $lt; length $gene_length is over 50000 - possible annotation bug?\n"; 
-    } elsif ($biotype eq "rRNA" || $biotype eq "tRNA") { 
-      print STDERR "WARNING: Skipping gene $lt (rRNA/tRNA).\n"; 
+    } elsif (($biotype eq "rRNA" || $biotype eq "tRNA") && $lt =~ m/NOTAG/) { 
+      print STDERR "WARNING: Skipping gene $lt (rRNA/tRNA without a locus tag).\n"; 
     } 
   }
 } 
