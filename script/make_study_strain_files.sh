@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 ## this is ran in <wdir>/study_strains
-set -euo pipefail
+set -eo pipefail
 
 SDIR=$1
 WDIR=$2
@@ -28,7 +28,7 @@ fi
 
 if [[ $REF == "" ]] 
 then
-  echo "==> No extra reference was specified, ncRNAs will be ignored"
+  echo "==> No extra reference was specified, additional small CDS and ncRNAs will not be added."
 elif [[ $REF == "prokka" ]]
 then
   echo "==> Option \"-r prokka\" activated, ncRNAs will be identified using Prokka's built-it Rfam database"
@@ -125,8 +125,8 @@ N_OP=`awk '$3-$2>3000' $TAG.rRNA.bed | wc -l`
 echo "==> Making combined rRNA operon interval file: Identified $N_OP rRNA operons, $N_INT intervals overall." 
 
 ## mv all necessary files to the appropriate ref dirs 
-mv $TAG.gene.gff $TAG.united.gff $TAG.CDS.gff $TAG.ncRNA.gff $TAG.prophage_overlap.tsv $WDIR/study_strains/$TAG || : ## hope you are as confused as I was, lol 
-mv $TAG.match.tsv $TAG.ref_blast.out $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $WDIR/study_strains/$TAG
+mv $TAG.gene.gff $TAG.united.gff $TAG.CDS.gff $TAG.ncRNA.gff $TAG.prophage_overlap.tsv $WDIR/study_strains/$TAG  || : 
+mv $TAG.match.tsv $TAG.ref_blast.out $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $WDIR/study_strains/$TAG || :
 mv $TAG.prokka ${TAG}.STAR $TAG.rRNA.bed $WDIR/study_strains/$TAG
 
 echo "==> All the generated files and indexes have been moved to $WDIR/study_strains/$TAG."

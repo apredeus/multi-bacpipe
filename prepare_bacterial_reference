@@ -52,8 +52,7 @@ TAG=""
 CPUS=""
 REF=""
 NEWREF=""
-SIMPLE=false
-MULTI=false 
+PTYPE=""
 
 ! getopt --test > /dev/null
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -81,11 +80,11 @@ while true; do
             shift 2
             ;;
         --simple)
-            SIMPLE=true
+            PTYPE="simple"
             shift 
             ;;
         --multi)
-            MULTI=true
+            PTYPE="multi"
             shift 
             ;;
         --)
@@ -103,28 +102,28 @@ done
 #### some sanity checks now 
 #####################################3
 
-if $MULTI
+if [[ $PTYPE == "multi" ]]
 then
   WDIR=$1
   CONFIG=$2
   echo "==> Initiating bacpipe reference preparation for MULTI-STRAIN workflow!"  
   echo "==> Following variables were set:"
   echo
-  echo "      WDIR: $WDIR"
-  echo "    CONFIG: $CONFIG"
-  echo "      CPUS: $CPUS"
-  echo " REF FASTA: $REF"
+  echo "              WDIR: $WDIR"
+  echo "            CONFIG: $CONFIG"
+  echo "              CPUS: $CPUS"
+  echo " ncRNA/smCDS FASTA: $REF"
   echo
-elif $SIMPLE 
+elif [[ $PTYPE == "simple" ]]
 then
   WDIR=$1
   TAG=$2
   echo "==> Initiating bacpipe reference preparation for SIMPLE SINGLE-STRAIN workflow!"  
   echo "==> Following variables were set:"
   echo
-  echo "      WDIR: $WDIR"
-  echo "       TAG: $TAG"
-  echo "      CPUS: $CPUS"
+  echo "              WDIR: $WDIR"
+  echo "               TAG: $TAG"
+  echo "              CPUS: $CPUS"
   echo
 else 
   >&2 echo "ERROR: please set either --simple or --multi option!"
@@ -137,8 +136,8 @@ then
   exit 1 
 fi 
 
-if [[ $TAG == "" || ! -s $WDIR/study_strains/$TAG.fa || ! -s $WDIR/study_strains/$TAG.gff ]]
-then 
+if [[ $PTYPE == "simple" ]] && [[ $TAG == "" || ! -s $WDIR/study_strains/$TAG.fa || ! -s $WDIR/study_strains/$TAG.gff ]]
+then
   >&2 echo "ERROR: you must specify the strain TAG and provide genome  <TAG>.fa and annotation <TAG>.gff in /study_strains sub-directory!"
   exit 1 
 fi 
@@ -159,7 +158,7 @@ else
   echo "==> Parallel jobs will be ran on $CPUS cores."
 fi
 
-if [[ $REF != "" && $SIMPLE == "true" ]]
+if [[ $REF != "" && $PTYPE == "simple" ]]
 then 
   >&2 echo "ERROR: reference option can only be set for --multi workflow!"
   exit 1
@@ -174,7 +173,7 @@ SDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ###                                                                             ###  
 ###################################################################################
 
-if [[ $SIMPLE == "false" ]]
+if [[ $PTYPE == "multi" ]]
 then
   ## case 1: make multi-strain reference using Roary
   ## config file has to be in $WDIR; throw an error otherwise 

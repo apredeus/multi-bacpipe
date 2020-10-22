@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 ## this is ran in <wdir>/ref_strains
-set -euo pipefail
+set -eo pipefail
 
 SDIR=$1
 WDIR=$2
@@ -21,9 +21,9 @@ fi
 
 if [[ $REF == "" ]] 
 then
-  echo "==> No extra reference was specified, ncRNAs will be ignored"
+  echo "==> No extra reference was specified, additional small CDS and ncRNAs will not be added."
 else 
-  echo "==> External reference fasta $REF will be used to annotate additional ncRNA and CDS"
+  echo "==> External reference fasta $REF will be used to annotate additional ncRNA and small CDS."
 fi 
 
 ######################################################
@@ -52,9 +52,13 @@ else
 fi
  
 ## mv all to the ref dir 
-mv $TAG.genome.fa $TAG.genome.fa.fai $TAG.clean.gff $TAG.ref_blast.out $TAG.match.tsv $WDIR/ref_strains/$TAG || :
-## clean up 
-rm ${TAG}.blast.n*
+mv $TAG.genome.fa $TAG.genome.fa.fai $TAG.clean.gff $WDIR/ref_strains/$TAG
+
+if [[ -f $TAG.ref_blast.out ]]
+then
+  mv $TAG.ref_blast.out $TAG.match.tsv $WDIR/ref_strains/$TAG
+  rm ${TAG}.blast.n*
+fi
 
 echo "==> All the generated files and indexes have been moved to $WDIR/ref_strains/$TAG."
 echo "==> Strain $TAG: all reference files successfully generated!"
