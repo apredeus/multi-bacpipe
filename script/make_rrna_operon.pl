@@ -18,7 +18,8 @@ open PRK_GFF,"<",$prokka_gff or die "$!";
 open GEN_GFF,"<",$gene_gff or die "$!";  ## "gene" GFF - could be $TAG.gene.gff for --simple, or $TAG.united.gff for --multi. 
 
 my $genes = {}; ## all features in both GFF files 
-my @rtrna;      ## rRNA/tRNA as defined by Prokka 
+my @rtrna;      ## rRNA/tRNA as defined by Prokka
+my $clen = {};  ## estimate of contigs length (as judged from GFF annotations, since we don't use fasta)  
 
 while (<PRK_GFF>) {
   if (! m/\t/) {
@@ -31,6 +32,12 @@ while (<PRK_GFF>) {
       $genes->{$id}->{chr} = $t[0]; 
       $genes->{$id}->{beg} = $t[3]-1; 
       $genes->{$id}->{end} = $t[4];
+      
+      if (defined $clen->{$t[0]}) { 
+        $clen->{$t[0]} = $t[4] if ($t[4] > $clen->{$t[0]}); 
+      } else { 
+        $clen->{$t[0]} = $t[4];
+      }
   
       if ($t[2] eq "tRNA") {  
         $genes->{$id}->{type} = "tRNA"; 
@@ -57,6 +64,12 @@ while (<GEN_GFF>) {
       $genes->{$id}->{chr} = $t[0];
       $genes->{$id}->{beg} = $t[3] - 1;
       $genes->{$id}->{end} = $t[4];
+
+      if (defined $clen->{$t[0]}) { 
+        $clen->{$t[0]} = $t[4] if ($t[4] > $clen->{$t[0]}); 
+      } else { 
+        $clen->{$t[0]} = $t[4];
+      }
   
       if ($t[2] eq "tRNA" || $t[8] =~ m/gene_biotype=tRNA/) {
         $genes->{$id}->{type} = "tRNA";
@@ -69,18 +82,19 @@ while (<GEN_GFF>) {
   }
 }
 
-## print Dumper $genes; 
-
 foreach my $rtrna (@rtrna) { 
-  ## distance from nearest non-rRNA, non-tRNA gene to this rRNA/tRNA gene from the left/right 
+  ## distance from nearest non-rRNA, non-tRNA gene to this rRNA/tRNA gene from the left/right
+  ## upd: also, limit the left border with 0 and right with the contig length 
   my $d_left  = 1000000; 
-  my $d_right = 1000000; 
+  my $d_right = 1000000;
   my $rbeg = $genes->{$rtrna}->{beg};
   my $rend = $genes->{$rtrna}->{end};
+  my $rchr = $genes->{$rtrna}->{chr};
+ 
   foreach my $key (keys %{$genes}) { 
     my $cbeg = $genes->{$key}->{beg}; 
     my $cend = $genes->{$key}->{end}; 
-    if ($genes->{$key}->{chr} eq $genes->{$rtrna}->{chr} && $genes->{$key}->{type} ne "rRNA" && $genes->{$key}->{type} ne "tRNA" && $cend-$cbeg <= 50000) { 
+    if ($genes->{$key}->{chr} eq $rchr && $genes->{$key}->{type} ne "rRNA" && $genes->{$key}->{type} ne "tRNA" && $cend-$cbeg <= 50000) { 
       my $max_beg = ($rbeg > $cbeg) ? $rbeg : $cbeg; 
       my $min_end = ($rend < $cend) ? $rend : $cend; 
       if ( $min_end >= $max_beg ) {
@@ -97,8 +111,10 @@ foreach my $rtrna (@rtrna) {
   }
   ## if less than 50 bp away, keep the exact borders of rtRNA; if more, extend to -50 bp to next non-rtRNA feature
   my $lbound = ($d_left > 50) ? $genes->{$rtrna}->{beg} - $d_left + 50 : $genes->{$rtrna}->{beg}; 
-  my $rbound = ($d_right > 50) ? $genes->{$rtrna}->{end} + $d_right - 50 : $genes->{$rtrna}->{end}; 
-  printf "%s\t%d\t%d\trRNA.%s\n",$genes->{$rtrna}->{chr},$lbound,$rbound,$rtrna;
+  my $rbound = ($d_right > 50) ? $genes->{$rtrna}->{end} + $d_right - 50 : $genes->{$rtrna}->{end};
+  $lbound = 0 if ($lbound < 0); 
+  $rbound = $clen->{$rchr} if ($rbound > $clen->{$rchr} && defined $clen->{$rchr});  
+  printf "%s\t%d\t%d\trtRNA.%s\n",$genes->{$rtrna}->{chr},$lbound,$rbound,$rtrna;
 }
 
 close PRK_GFF; 
