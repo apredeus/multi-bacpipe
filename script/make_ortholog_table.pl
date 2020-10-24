@@ -13,7 +13,7 @@ use strict;
 use warnings; 
 use Data::Dumper; 
 
-if (scalar @ARGV != 4) {
+if (scalar @ARGV < 3 || scalar @ARGV > 4) {
   print STDERR "Usage: ./make_ortholog_table.pl <full_wdir> <roary_unix_tsv> <bacpipe_config> <modified_ref_fa>\n";
   exit 1
 }
@@ -21,29 +21,19 @@ if (scalar @ARGV != 4) {
 my $wdir = shift @ARGV; 
 my $roary_unix_csv = shift @ARGV; 
 my $config = shift @ARGV;
-my $ref_fa = shift @ARGV;  
+my $ref_fa;
 
-
-open FA,"<",$ref_fa or die "$!"; 
-open ROARY,"<",$roary_unix_csv or die "$!"; 
-open CONFIG,"<",$config or die "$!"; 
+$ref_fa = shift @ARGV if (scalar @ARGV == 1);  
 
 my $blast_type = {}; ## this is an abhorrent hack to deal with pseudogene problem in ref strains. Please think of something more elegant ffs. 
-my $strains = {};   ## for config parsing  
-my $genes = {};     ## strain- and lt-based data rec
-my $names = {};     ## key = unique name, output hash 
+my $strains = {};    ## for config parsing  
+my $genes = {};      ## strain- and lt-based data rec
+my $names = {};      ## key = unique name, output hash 
 my @ref_strains; 
 my @study_strains; 
 
-while (<FA>) {
-  if (m/^>(.*)\.(.*?)$/) { 
-    my $name = $1;
-    my $type = $2;
-    die "ERROR: You can't have blast types other than CDS/ncRNA/misc!\n" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "misc");
-    #print STDERR "$name\t$type\n";
-    $blast_type->{$name} = $type;  
-  } 
-} 
+open ROARY,"<",$roary_unix_csv or die "$!"; 
+open CONFIG,"<",$config or die "$!";
 
 ## define strains using config file 
 while (<CONFIG>) {
@@ -57,197 +47,335 @@ while (<CONFIG>) {
     push @study_strains,$t[1];
   } 
 }
+
 ## sort strains within each group to make output reproducible   
 @ref_strains = sort { $a cmp $b } @ref_strains; 
 @study_strains = sort { $a cmp $b } @study_strains;
 my @all_strains = @study_strains; 
 push @all_strains,@ref_strains; 
 
-foreach my $strain (@study_strains) { 
-  my $prop_overlap = join "",$wdir,"/study_strains/",$strain,"/",$strain,".prophage_overlap.tsv";
-  my $fasta_index = join "",$wdir,"/study_strains/",$strain,"/",$strain,".genome.fa.fai";
-  my $united_gff = join "",$wdir,"/study_strains/",$strain,"/",$strain,".united.gff";
-  my $match_tsv = join "",$wdir,"/study_strains/",$strain,"/",$strain,".match.tsv";
-
-  ## define and remember chromosome name for each strain
-  my $chr_name = `cat $fasta_index | sort -k2,2nr | head -n 1 | cut -f 1`;
-  chomp $chr_name;
-  $genes->{$strain}->{chr_name} = $chr_name;
-  
-  ## parse the GFF 
-  open GFF,"<",$united_gff or die "$!"; 
-  while (<GFF>) { 
-    chomp; 
-    my @t = split /\t+/; 
-    $t[8] =~ m/ID=(.*?);/; 
-    my $lt = $1;
-    ## all locus_tags are unique - after processing with unify_study_strain.pl
-    ## you can also preprocess GFF files your way but warranty is void in this case :) 
-    $genes->{$strain}->{$lt}->{chr} = $t[0]; 
-    $genes->{$strain}->{$lt}->{type} = $t[2]; 
-    $genes->{$strain}->{$lt}->{beg} = $t[3]; 
-    $genes->{$strain}->{$lt}->{end} = $t[4]; 
-    $genes->{$strain}->{$lt}->{strand} = $t[6]; 
-    if ($t[0] eq $genes->{$strain}->{chr_name}) { 
-      $genes->{$strain}->{$lt}->{loc} = "chromosome";
-    } else { 
-      $genes->{$strain}->{$lt}->{loc} = "plasmid";
-    }  
-  } 
-  close GFF;  
-  
-  ## use prophage_overlap file obtained with bedtools 
-  ## 14 cols - 1-9 is GFF, 10-13 is prophage bed, 14 is overlap  
-  open PROP,"<",$prop_overlap or die "$!"; 
-  while (<PROP>) { 
-    chomp;
-    my @t = split /\t+/;
-    $t[8] =~ m/ID=(.*?);/; 
-    my $lt = $1; 
-    $genes->{$strain}->{$lt}->{loc} = "prophage";
-  }  
-  close PROP; 
- 
-  open MATCH,"<",$match_tsv or die "$!"; 
-  while (<MATCH>) { 
-    chomp; 
-    my $lt = (split /\t+/)[0]; 
-    my $bname = (split /\t+/)[1];  ## blast name 
-    $genes->{$strain}->{$lt}->{bname} = $bname;
-    my $type = $genes->{$strain}->{$lt}->{type};
-    my $loc = $genes->{$strain}->{$lt}->{loc};
- 
-    if ($type ne "CDS" && $type ne "other" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
-      ## if we have seen this name for this strain already, keep adding entries
-      ## no paralog entries for CDS - let Roary handle this 
-      print STDERR "WARNING: more than 1 defined match for blast name $bname, strain $strain!\n"; 
-      my $i = 1; 
-      while (defined $names->{$bname}->{blast}->{$i}->{$strain}) { 
-        $i++; 
-      } 
-      $names->{$bname}->{blast}->{$i}->{$strain}->{lt} = $lt;  
-      $names->{$bname}->{blast}->{$i}->{$strain}->{type} = $type;  
-      $names->{$bname}->{blast}->{$i}->{$strain}->{loc} = $loc; 
-    } elsif ($type ne "CDS" && $type ne "other") { 
-      $names->{$bname}->{blast}->{1}->{$strain}->{lt} = $lt;  
-      $names->{$bname}->{blast}->{1}->{$strain}->{type} = $type;  
-      $names->{$bname}->{blast}->{1}->{$strain}->{loc} = $loc; 
-    }  
-  } 
-  close MATCH; 
-} 
-
-foreach my $strain (@ref_strains) { 
-  ## ref strains don't have defined prophages/intervals 
-  my $fasta_index = join "",$wdir,"/ref_strains/",$strain,"/",$strain,".genome.fa.fai";
-  my $clean_gff = join "",$wdir,"/ref_strains/",$strain,"/",$strain,".clean.gff";
-  my $match_tsv = join "",$wdir,"/ref_strains/",$strain,"/",$strain,".match.tsv";
-
-  ## define and remember chromosome name for each strain
-  my $chr_name = `cat $fasta_index | sort -k2,2nr | head -n 1 | cut -f 1`;
-  chomp $chr_name;
-  $genes->{$strain}->{chr_name} = $chr_name;
-  
-  ## parse the GFF 
-  open GFF,"<",$clean_gff or die "$!"; 
-  while (<GFF>) { 
-    chomp; 
-    my @t = split /\t+/; 
-    $t[8] =~ m/ID=(.*?);/; 
-    my $lt = $1;
-    ## all locus_tags are unique - after processing with unify_study_strain.pl
-    ## you can also preprocess GFF files your way but warranty is void in this case :) 
-    $genes->{$strain}->{$lt}->{chr} = $t[0]; 
-    $genes->{$strain}->{$lt}->{type} = $t[2]; 
-    $genes->{$strain}->{$lt}->{beg} = $t[3]; 
-    $genes->{$strain}->{$lt}->{end} = $t[4]; 
-    $genes->{$strain}->{$lt}->{strand} = $t[6]; 
-  } 
-  close GFF;  
-  
-  open MATCH,"<",$match_tsv or die "$!"; 
-  while (<MATCH>) { 
-    chomp; 
-    my $lt = (split /\t+/)[0]; 
-    my $bname = (split /\t+/)[1]; 
-    $genes->{$strain}->{$lt}->{bname} = $bname;
-    my $type = $blast_type->{$bname};  ## this is to take care of pseudogenes/misc  
- 
-    if ($type ne "CDS" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
-      ## if we have seen this name for this strain already, keep adding entries
-      ## no location is defined for reference strains 
-      print STDERR "WARNING: more than 1 defined match for blast name $bname, strain $strain!\n"; 
-      my $i = 1; 
-      while (defined $names->{$bname}->{blast}->{$i}->{$strain}) { 
-        $i++; 
-      } 
-      $names->{$bname}->{blast}->{$i}->{$strain}->{lt} = $lt;  
-      $names->{$bname}->{blast}->{$i}->{$strain}->{type} = $type;  
-    } elsif ($type ne "CDS" && $type ne "other") { 
-      $names->{$bname}->{blast}->{1}->{$strain}->{lt} = $lt;  
-      $names->{$bname}->{blast}->{1}->{$strain}->{type} = $type;  
-    }  
-  } 
-  close MATCH; 
-} 
-
 my $header_line = <ROARY>;
 chomp $header_line;  
 my @header = split /\t/,$header_line;
-my $new_header = "Gene_name\tType\tLocation";  
+my $new_header = "Gene_name\tType\tLocation"; 
+ 
 for (my $i = 0; $i < scalar @header; $i++) {
   my $strain = $header[$i];
-  ## if we recognize tag of ref/study strain, we record which column of Roary output is it in 
-  if (defined $genes->{$strain}) { 
-    $genes->{$strain}->{index} = $i;
-    $new_header = join "\t",$new_header,$strain; 
+  ## if we recognize tag of ref/study strain, we record which column of Roary output is it in
+  foreach my $known_strain (@all_strains) {  
+    if ($strain eq $known_strain) { 
+      $genes->{$strain}->{index} = $i;
+      $new_header = join "\t",$new_header,$strain;
+    } 
   }
 }
 
-## order of strains is as follows: 1) unix-alphabetical study; 2) unix-alphabetical reference
-   
-OUTER: while (<ROARY>) {
-  chomp;
-  ## assuming pre-formatted gene presence-absence file with tabs; get all the empty fields right  
-  my @t = split /\t/,$_,-1;
-  my $rname = ($t[1] eq "") ? $t[0] : $t[1];
-  ## everything with underscore is to be stripped to original name
-  ## ie tnpA_1a, tnpA and tnpA_2 will all become tnpA, and then get a unique new name (tnpA, tnpA_2, tnpA_3, etc) 
-  ## dashes and numbers remain intact, so tnpA2 or RyhB-1 remain the same 
-  $rname =~ s/_(.*?)$//g if ($rname !~ m/group_/); 
+### few things are optional: 1) whether you're using extra CDS/ncRNA ref; 2) whether you have prophage annotation. Hence the nightmare below. 
+################################ CASE 1: NO EXTRA SMALL CDS/ncRNA ref #######################################################################
 
-  foreach my $strain (@all_strains) { 
-    my $index = $genes->{$strain}->{index};
-    my $lt = ($t[$index] eq "") ? "NONE" : $t[$index]; 
-
-    $genes->{$strain}->{$lt}->{rname} = $rname if ($lt ne "NONE");
-    ## we want to skip misc - if there's already blast entry associated with at least 1 lt, skip the whole roary line 
-    if (defined $genes->{$strain}->{$lt}->{bname} && $blast_type->{$genes->{$strain}->{$lt}->{bname}} eq "misc") { 
-      delete $names->{$rname}->{roary}; 
-      next OUTER; 
+if (! defined $ref_fa) {  
+  print STDERR "Processing orthologs WITHOUT external ncRNA/smCDS reference.\n"; 
+  foreach my $strain (@study_strains) { 
+    my $prop_overlap = join "",$wdir,"/study_strains/",$strain,"/",$strain,".prophage_overlap.tsv";
+    my $fasta_index = join "",$wdir,"/study_strains/",$strain,"/",$strain,".genome.fa.fai";
+    my $united_gff = join "",$wdir,"/study_strains/",$strain,"/",$strain,".united.gff";
+  
+    ## define and remember chromosome name for each strain (simply the biggest replicon)
+    my $chr_name = `cat $fasta_index | sort -k2,2nr | head -n 1 | cut -f 1`;
+    chomp $chr_name;
+    $genes->{$strain}->{chr_name} = $chr_name;
+    
+    ## parse the GFF 
+    open GFF,"<",$united_gff or die "$!"; 
+    while (<GFF>) { 
+      chomp; 
+      my @t = split /\t+/; 
+      $t[8] =~ m/ID=(.*?);/; 
+      my $lt = $1;
+      ## all locus_tags are unique - after processing with unify_study_strain.pl
+      ## you can also preprocess GFF files your way but warranty is void in this case :) 
+      $genes->{$strain}->{$lt}->{chr} = $t[0]; 
+      $genes->{$strain}->{$lt}->{type} = $t[2]; 
+      $genes->{$strain}->{$lt}->{beg} = $t[3]; 
+      $genes->{$strain}->{$lt}->{end} = $t[4]; 
+      $genes->{$strain}->{$lt}->{strand} = $t[6]; 
+      if ($t[0] eq $genes->{$strain}->{chr_name}) { 
+        $genes->{$strain}->{$lt}->{loc} = "chromosome";
+      } else { 
+        $genes->{$strain}->{$lt}->{loc} = "plasmid";
+      }  
     } 
- 
-    if (defined $names->{$rname}->{roary}->{1}->{$strain}) {
-      ## if we have seen this name for this strain already, keep adding entries
-      ## no location is defined for reference strains 
-      my $i = 1; 
-      while (defined $names->{$rname}->{roary}->{$i}->{$strain}) {
-        $i++; 
+    close GFF;  
+    
+    ## use prophage_overlap file obtained with bedtools; output has 14 cols - 1-9 is GFF, 10-13 is prophage bed, 14 is overlap
+    ## if file is not defined, we'll just have chr/plasmid annotations 
+    if (-f $prop_overlap) {  
+      open PROP,"<",$prop_overlap or die "$!"; 
+      while (<PROP>) { 
+        chomp;
+        my @t = split /\t+/;
+        $t[8] =~ m/ID=(.*?);/; 
+        my $lt = $1; 
+        $genes->{$strain}->{$lt}->{loc} = "prophage";
+      }  
+      close PROP;
+    }
+  } 
+  
+  foreach my $strain (@ref_strains) { 
+    ## ref strains don't have defined prophages/intervals 
+    my $fasta_index = join "",$wdir,"/ref_strains/",$strain,"/",$strain,".genome.fa.fai";
+    my $clean_gff = join "",$wdir,"/ref_strains/",$strain,"/",$strain,".clean.gff";
+  
+    ## define and remember chromosome name for each strain
+    my $chr_name = `cat $fasta_index | sort -k2,2nr | head -n 1 | cut -f 1`;
+    chomp $chr_name;
+    $genes->{$strain}->{chr_name} = $chr_name;
+    
+    ## parse the GFF 
+    open GFF,"<",$clean_gff or die "$!"; 
+    while (<GFF>) { 
+      chomp; 
+      my @t = split /\t+/; 
+      $t[8] =~ m/ID=(.*?);/; 
+      my $lt = $1;
+      ## all locus_tags are unique - after processing with unify_study_strain.pl
+      ## you can also preprocess GFF files your way but warranty is void in this case :) 
+      $genes->{$strain}->{$lt}->{chr} = $t[0]; 
+      $genes->{$strain}->{$lt}->{type} = $t[2]; 
+      $genes->{$strain}->{$lt}->{beg} = $t[3]; 
+      $genes->{$strain}->{$lt}->{end} = $t[4]; 
+      $genes->{$strain}->{$lt}->{strand} = $t[6]; 
+    } 
+    close GFF;  
+  } 
+  
+  ## order of strains is as follows: 1) unix-alphabetical study; 2) unix-alphabetical reference
+  OUTER: while (<ROARY>) {
+    chomp;
+    ## assuming pre-formatted gene presence-absence file with tabs; get all the empty fields right  
+    my @t = split /\t/,$_,-1;
+    my $rname = ($t[1] eq "") ? $t[0] : $t[1];
+    ## everything with underscore is to be stripped to original name
+    ## ie tnpA_1a, tnpA and tnpA_2 will all become tnpA, and then get a unique new name (tnpA, tnpA_2, tnpA_3, etc) 
+    ## dashes and numbers remain intact, so tnpA2 or RyhB-1 remain the same. Does not apply to group_XXX names from Roary.  
+    $rname =~ s/_(.*?)$//g if ($rname !~ m/group_/); 
+  
+    foreach my $strain (@all_strains) { 
+      my $index = $genes->{$strain}->{index};
+      my $lt = ($t[$index] eq "") ? "NONE" : $t[$index]; 
+  
+      $genes->{$strain}->{$lt}->{rname} = $rname if ($lt ne "NONE");
+      ## we want to skip misc - if there's already blast entry associated with at least 1 lt, skip the whole roary line 
+      if (defined $genes->{$strain}->{$lt}->{bname} && $blast_type->{$genes->{$strain}->{$lt}->{bname}} eq "misc") { 
+        delete $names->{$rname}->{roary}; 
+        next OUTER; 
       } 
-      $names->{$rname}->{roary}->{$i}->{$strain}->{lt} = $lt;  
-      $names->{$rname}->{roary}->{$i}->{$strain}->{type} = $genes->{$strain}->{$lt}->{type};  
-      $names->{$rname}->{roary}->{$i}->{$strain}->{loc} = $genes->{$strain}->{$lt}->{loc} if (defined $genes->{$strain}->{$lt}->{loc}); 
-    } else { 
-      $names->{$rname}->{roary}->{1}->{$strain}->{lt} = $lt;  
-      $names->{$rname}->{roary}->{1}->{$strain}->{type} = $genes->{$strain}->{$lt}->{type};  
-      $names->{$rname}->{roary}->{1}->{$strain}->{loc} = $genes->{$strain}->{$lt}->{loc} if (defined $genes->{$strain}->{$lt}->{loc}); 
+   
+      if (defined $names->{$rname}->{roary}->{1}->{$strain}) {
+        ## if we have seen this name for this strain already, keep adding entries
+        ## no location is defined for reference strains 
+        my $i = 1; 
+        while (defined $names->{$rname}->{roary}->{$i}->{$strain}) {
+          $i++; 
+        } 
+        $names->{$rname}->{roary}->{$i}->{$strain}->{lt} = $lt;  
+        $names->{$rname}->{roary}->{$i}->{$strain}->{type} = $genes->{$strain}->{$lt}->{type};  
+        $names->{$rname}->{roary}->{$i}->{$strain}->{loc} = $genes->{$strain}->{$lt}->{loc} if (defined $genes->{$strain}->{$lt}->{loc}); 
+      } else { 
+        $names->{$rname}->{roary}->{1}->{$strain}->{lt} = $lt;  
+        $names->{$rname}->{roary}->{1}->{$strain}->{type} = $genes->{$strain}->{$lt}->{type};  
+        $names->{$rname}->{roary}->{1}->{$strain}->{loc} = $genes->{$strain}->{$lt}->{loc} if (defined $genes->{$strain}->{$lt}->{loc}); 
+      } 
+    }  
+  } 
+} else { 
+################################ CASE 2: WITH EXTRA SMALL CDS/ncRNA ref #######################################################################
+  print STDERR "Processing orthologs WITH external ncRNA/smCDS reference $ref_fa.\n"; 
+  open FA,"<",$ref_fa or die "$!"; 
+  while (<FA>) {
+    if (m/^>(.*)\.(.*?)$/) { 
+      my $name = $1;
+      my $type = $2;
+      die "ERROR: You can't have blast types other than CDS/ncRNA/misc!\n" if ($type ne "CDS" && $type ne "ncRNA" && $type ne "misc");
+      #print STDERR "$name\t$type\n";
+      $blast_type->{$name} = $type;  
     } 
-  }  
+  } 
+  
+  foreach my $strain (@study_strains) { 
+    my $prop_overlap = join "",$wdir,"/study_strains/",$strain,"/",$strain,".prophage_overlap.tsv";
+    my $fasta_index = join "",$wdir,"/study_strains/",$strain,"/",$strain,".genome.fa.fai";
+    my $united_gff = join "",$wdir,"/study_strains/",$strain,"/",$strain,".united.gff";
+    my $match_tsv = join "",$wdir,"/study_strains/",$strain,"/",$strain,".match.tsv";
+  
+    ## define and remember chromosome name for each strain (simply the biggest replicon)
+    my $chr_name = `cat $fasta_index | sort -k2,2nr | head -n 1 | cut -f 1`;
+    chomp $chr_name;
+    $genes->{$strain}->{chr_name} = $chr_name;
+    
+    ## parse the GFF 
+    open GFF,"<",$united_gff or die "$!"; 
+    while (<GFF>) { 
+      chomp; 
+      my @t = split /\t+/; 
+      $t[8] =~ m/ID=(.*?);/; 
+      my $lt = $1;
+      ## all locus_tags are unique - after processing with unify_study_strain.pl
+      ## you can also preprocess GFF files your way but warranty is void in this case :) 
+      $genes->{$strain}->{$lt}->{chr} = $t[0]; 
+      $genes->{$strain}->{$lt}->{type} = $t[2]; 
+      $genes->{$strain}->{$lt}->{beg} = $t[3]; 
+      $genes->{$strain}->{$lt}->{end} = $t[4]; 
+      $genes->{$strain}->{$lt}->{strand} = $t[6]; 
+      if ($t[0] eq $genes->{$strain}->{chr_name}) { 
+        $genes->{$strain}->{$lt}->{loc} = "chromosome";
+      } else { 
+        $genes->{$strain}->{$lt}->{loc} = "plasmid";
+      }  
+    } 
+    close GFF;  
+    
+    ## use prophage_overlap file obtained with bedtools 14 cols - 1-9 is GFF, 10-13 is prophage bed, 14 is overlap
+    if (-f $prop_overlap) { 
+      open PROP,"<",$prop_overlap or die "$!"; 
+      while (<PROP>) { 
+        chomp;
+        my @t = split /\t+/;
+        $t[8] =~ m/ID=(.*?);/; 
+        my $lt = $1; 
+        $genes->{$strain}->{$lt}->{loc} = "prophage";
+      }  
+      close PROP;
+    } 
+   
+    open MATCH,"<",$match_tsv or die "$!"; 
+    while (<MATCH>) { 
+      chomp; 
+      my $lt = (split /\t+/)[0]; 
+      my $bname = (split /\t+/)[1];  ## blast name 
+      $genes->{$strain}->{$lt}->{bname} = $bname;
+      my $type = $genes->{$strain}->{$lt}->{type};
+      my $loc = $genes->{$strain}->{$lt}->{loc};
+   
+      if ($type ne "CDS" && $type ne "other" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
+        ## if we have seen this name for this strain already, keep adding entries
+        ## no paralog entries for CDS - let Roary handle this 
+        print STDERR "WARNING: more than 1 defined match for blast name $bname, strain $strain!\n"; 
+        my $i = 1; 
+        while (defined $names->{$bname}->{blast}->{$i}->{$strain}) { 
+          $i++; 
+        } 
+        $names->{$bname}->{blast}->{$i}->{$strain}->{lt} = $lt;  
+        $names->{$bname}->{blast}->{$i}->{$strain}->{type} = $type;  
+        $names->{$bname}->{blast}->{$i}->{$strain}->{loc} = $loc; 
+      } elsif ($type ne "CDS" && $type ne "other") { 
+        $names->{$bname}->{blast}->{1}->{$strain}->{lt} = $lt;  
+        $names->{$bname}->{blast}->{1}->{$strain}->{type} = $type;  
+        $names->{$bname}->{blast}->{1}->{$strain}->{loc} = $loc; 
+      }  
+    } 
+    close MATCH; 
+  } 
+  
+  foreach my $strain (@ref_strains) { 
+    ## ref strains don't have defined prophages/intervals 
+    my $fasta_index = join "",$wdir,"/ref_strains/",$strain,"/",$strain,".genome.fa.fai";
+    my $clean_gff = join "",$wdir,"/ref_strains/",$strain,"/",$strain,".clean.gff";
+    my $match_tsv = join "",$wdir,"/ref_strains/",$strain,"/",$strain,".match.tsv";
+  
+    ## define and remember chromosome name for each strain
+    my $chr_name = `cat $fasta_index | sort -k2,2nr | head -n 1 | cut -f 1`;
+    chomp $chr_name;
+    $genes->{$strain}->{chr_name} = $chr_name;
+    
+    ## parse the GFF 
+    open GFF,"<",$clean_gff or die "$!"; 
+    while (<GFF>) { 
+      chomp; 
+      my @t = split /\t+/; 
+      $t[8] =~ m/ID=(.*?);/; 
+      my $lt = $1;
+      ## all locus_tags are unique - after processing with unify_study_strain.pl
+      ## you can also preprocess GFF files your way but warranty is void in this case :) 
+      $genes->{$strain}->{$lt}->{chr} = $t[0]; 
+      $genes->{$strain}->{$lt}->{type} = $t[2]; 
+      $genes->{$strain}->{$lt}->{beg} = $t[3]; 
+      $genes->{$strain}->{$lt}->{end} = $t[4]; 
+      $genes->{$strain}->{$lt}->{strand} = $t[6]; 
+    } 
+    close GFF;  
+    
+    open MATCH,"<",$match_tsv or die "$!"; 
+    while (<MATCH>) { 
+      chomp; 
+      my $lt = (split /\t+/)[0]; 
+      my $bname = (split /\t+/)[1]; 
+      $genes->{$strain}->{$lt}->{bname} = $bname;
+      my $type = $blast_type->{$bname};  ## this is to take care of pseudogenes/misc  
+   
+      if ($type ne "CDS" && defined $names->{$bname}->{blast}->{1}->{$strain}) {
+        ## if we have seen this name for this strain already, keep adding entries
+        ## no location is defined for reference strains 
+        print STDERR "WARNING: more than 1 defined match for blast name $bname, strain $strain!\n"; 
+        my $i = 1; 
+        while (defined $names->{$bname}->{blast}->{$i}->{$strain}) { 
+          $i++; 
+        } 
+        $names->{$bname}->{blast}->{$i}->{$strain}->{lt} = $lt;  
+        $names->{$bname}->{blast}->{$i}->{$strain}->{type} = $type;  
+      } elsif ($type ne "CDS" && $type ne "other") { 
+        $names->{$bname}->{blast}->{1}->{$strain}->{lt} = $lt;  
+        $names->{$bname}->{blast}->{1}->{$strain}->{type} = $type;  
+      }  
+    } 
+    close MATCH; 
+  } 
+  
+  ## order of strains is as follows: 1) unix-alphabetical study; 2) unix-alphabetical reference
+  OUTER: while (<ROARY>) {
+    chomp;
+    ## assuming pre-formatted gene presence-absence file with tabs; get all the empty fields right  
+    my @t = split /\t/,$_,-1;
+    my $rname = ($t[1] eq "") ? $t[0] : $t[1];
+    ## everything with underscore is to be stripped to original name
+    ## ie tnpA_1a, tnpA and tnpA_2 will all become tnpA, and then get a unique new name (tnpA, tnpA_2, tnpA_3, etc) 
+    ## dashes and numbers remain intact, so tnpA2 or RyhB-1 remain the same 
+    $rname =~ s/_(.*?)$//g if ($rname !~ m/group_/); 
+  
+    foreach my $strain (@all_strains) { 
+      my $index = $genes->{$strain}->{index};
+      my $lt = ($t[$index] eq "") ? "NONE" : $t[$index]; 
+  
+      $genes->{$strain}->{$lt}->{rname} = $rname if ($lt ne "NONE");
+      ## we want to skip misc - if there's already blast entry associated with at least 1 lt, skip the whole roary line 
+      printf STDERR "DEBUG: undef for %s %s %s\n",$strain,$lt,$blast_type->{$genes->{$strain}->{$lt}->{bname}} if (! defined $blast_type->{$genes->{$strain}->{$lt}->{bname}});
+      if (defined $genes->{$strain}->{$lt}->{bname} && $blast_type->{$genes->{$strain}->{$lt}->{bname}} eq "misc") {
+        delete $names->{$rname}->{roary}; 
+        next OUTER; 
+      } 
+   
+      if (defined $names->{$rname}->{roary}->{1}->{$strain}) {
+        ## if we have seen this name for this strain already, keep adding entries
+        ## no location is defined for reference strains 
+        my $i = 1; 
+        while (defined $names->{$rname}->{roary}->{$i}->{$strain}) {
+          $i++; 
+        } 
+        $names->{$rname}->{roary}->{$i}->{$strain}->{lt} = $lt;  
+        $names->{$rname}->{roary}->{$i}->{$strain}->{type} = $genes->{$strain}->{$lt}->{type};  
+        $names->{$rname}->{roary}->{$i}->{$strain}->{loc} = $genes->{$strain}->{$lt}->{loc} if (defined $genes->{$strain}->{$lt}->{loc}); 
+      } else { 
+        $names->{$rname}->{roary}->{1}->{$strain}->{lt} = $lt;  
+        $names->{$rname}->{roary}->{1}->{$strain}->{type} = $genes->{$strain}->{$lt}->{type};  
+        $names->{$rname}->{roary}->{1}->{$strain}->{loc} = $genes->{$strain}->{$lt}->{loc} if (defined $genes->{$strain}->{$lt}->{loc}); 
+      } 
+    }  
+  }
+  close FA; 
 } 
 
 ## you got all orthology records in $names now; it's just down to printing them 
-
-#print STDERR Dumper $names;
 print "$new_header\n";    
 
 foreach my $name (keys %{$names}) { 
@@ -292,8 +420,7 @@ foreach my $name (keys %{$names}) {
       $i++; 
     }  
   } else { 
-    ## both roary and blast are defined for this bee yotch  
-    ## (sorry I'm really exhausted at this point) 
+    ## both roary and blast are defined for this 
     ## if blast_type is CDS we ignore blast part of hash completely 
     ## otherwise (if it's misc or ncRNA) we ignore roary 
     ## basically it should only happen for misc
@@ -339,4 +466,3 @@ foreach my $name (keys %{$names}) {
 
 close ROARY; 
 close CONFIG; 
-close FA; 

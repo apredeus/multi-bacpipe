@@ -24,7 +24,7 @@ bedtools getfasta -s -name -fi All_study_genomes.fa -fo - -bed All_study_genomes
 transeq -clean -table 11 -sequence All_study_genomes.CDS.fa -outseq All_study_genomes.translated.fa &> /dev/null 
 
 ## find problematic CDS and change their type to pseudogene, keep new ref in $WDIR 
-$SDIR/script/modify_reference_fasta.pl All_study_genomes.translated.fa $REF > $NEWREF
+$SDIR/script/check_extra_ref.pl All_study_genomes.translated.fa $REF > $NEWREF
 
 rm All_study_genomes.blast.n* All_study_genomes.fa All_study_genomes.ref_blast.out All_study_genomes.CDS.bed All_study_genomes.CDS.fa All_study_genomes.translated.fa All_study_genomes.blast.gff All_study_genomes.fa.fai 
 echo -e "\n--------------------------------------------------------------\n" 

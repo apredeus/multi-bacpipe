@@ -214,8 +214,8 @@ then
     ## if at least one study genome generates a frameshift, CDS in the ref becomes pseudogene
     cd $WDIR
     REFNAME=`basename $REF`
-    NEWREF=$WDIR/${REFNAME%%.fa*}.modified.fa
-    $SDIR/script/modify_reference_fasta.sh $SDIR $WDIR $REF $NEWREF
+    NEWREF=$WDIR/${REFNAME%%.fa*}.check.fa
+    $SDIR/script/check_extra_ref.sh $SDIR $WDIR $REF $NEWREF
     ## we are going to use the modified ref fasta from now on 
   fi 
   
