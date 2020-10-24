@@ -10,8 +10,8 @@
 use strict;
 use warnings; 
 
-if ($#ARGV != 0) {
-  die "USAGE: reference_gff_cleanup.pl <ncbi_gff>\n";
+if (scalar @ARGV != 1) {
+  die "Usage: ./reference_gff_cleanup.pl <ncbi_gff>\n";
 }
 
 my $gff = shift @ARGV; 

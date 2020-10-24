@@ -22,12 +22,10 @@ then
   echo 
   printf "Usage: ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs] [-r <fasta.fa>]${NC}\n"
   echo   "         - to use reference ncRNA/extra CDS fasta file (see below), or" 
-  printf "       ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs] [-r prokka]${NC}\n"
-  echo   "         - to use Prokka to predict non-coding RNAs with Rfam, or "
   printf "       ${GRN}prepare_bacterial_reference ${GRN2}--multi  <working_directory> <config> [-p CPUs]${NC}\n"
-  echo   "         - to completely ignore non-coding RNAs, or "
+  echo   "         - to use Prokka to predict non-coding RNAs with Rfam, or "
   printf "       ${GRN}prepare_bacterial_reference ${GRN2}--simple <working_directory>  <tag>   [-p CPUs]${NC}\n"
-  echo   "         - to use simple workflow with one reference genome FNA/GFF"
+  echo   "         - to use simple workflow with one reference genome FASTA and GFF annotation."
   echo 
   echo "Positional arguments:"
   echo "  <working_dir>  Directory containing sub-directories named fastqs, study_strains, and ref_strains"

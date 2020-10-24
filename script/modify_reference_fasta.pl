@@ -4,13 +4,19 @@ use strict;
 use warnings; 
 ## use Data::Dumper; 
 
+## use translated sequences of putative reference CDS mapped onto genomes 
+## and identify improper CDS; change feature type to `misc` - which applies e.g. to pseudogenes
+
+if (scalar @ARGV != 2) {
+  print STDERR "Usage: ./modify_reference_fasta.pl <protein_fa> <ref_fa>\n";
+  exit 1
+}
+
 my $prot_fa = shift @ARGV; 
 my $ref_fa = shift @ARGV; 
-my $mod_fa = shift @ARGV; 
 
 open PROT_FA,"<",$prot_fa; 
 open REF_FA,"<",$ref_fa; 
-open MOD_FA,">",$mod_fa; 
 
 my $seq_name;
 my $protein = {};
@@ -49,12 +55,11 @@ while (<REF_FA>) {
   if (m/^>(.*?).CDS/) { 
     my $cds_name = $1; 
     s/^>$cds_name\.CDS/>$cds_name.misc/ if (defined $names->{$cds_name}); 
-    print MOD_FA; 
+    print; 
   } else { 
-    print MOD_FA; 
+    print; 
   }
 }  
 
 close PROT_FA; 
 close REF_FA;
-close MOD_FA;  

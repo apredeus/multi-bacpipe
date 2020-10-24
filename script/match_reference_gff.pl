@@ -1,19 +1,24 @@
 #!/usr/bin/env perl 
 
-## similar to unify_strain_gff.pl, but different in few ways: 
+## similar to unify_strain_gff.pl, used on ref_strains; different in few ways: 
 ## - no new GFF file is produced, only blast results are filtered and matched to existing ref features 
 ## - match has to be pretty close to qualify and also of the same kind  
-## in the end, $TAG.match.tsv is generated 
+## in the end, $TAG.match.tsv is generated and later used by make_ortholog_table.pl  
 
 use strict; 
 use warnings; 
 #use Data::Dumper; 
 
+if (scalar @ARGV != 3) {
+  print STDERR "Usage: ./match_reference_gff.pl <clean_gff> <ref_blast_out> <modified_ref_fa>\n";
+  exit 1
+}
+
 my $clean_gff = shift @ARGV; 
 my $blast_out = shift @ARGV; 
 my $ref_fa = shift @ARGV; 
 my $tag = $blast_out;
-$tag =~ s/.ref_blast.out//g;  
+$tag =~ s/\.ref_blast.out//g;  
 
 my $match_table = $tag.".match.tsv";
 

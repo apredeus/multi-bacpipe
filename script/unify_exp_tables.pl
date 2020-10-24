@@ -15,6 +15,11 @@ use warnings;
 ## group_* genes are replaced with reference strain locus tags (eg STM for Salmonella) whenever possible. 
 
 
+if (scalar @ARGV != 4) {
+  print "Usage: ./unify_exp_tables.pl <full_wdir> <bacpipe_config> <ortholog_table> <ref_strain>\n";
+  exit 1
+}
+
 my $wdir = shift @ARGV; 
 my $config = shift @ARGV; 
 my $ortho = shift @ARGV; 

@@ -5,7 +5,7 @@
 ## 1) unique name (disambiguated with _*, e.g. citA/citA_2/citA_3 etc,
 ## 2) type - CDS or ncRNA 
 ## 3) location (chromosome/prophage/plasmid),
-## 4-n) all IDs (locus tags) for N used + n reference strains. 
+## 4-n) all IDs (locus tags) for X study + Y reference strains. 
 
 ## roary gene_presence_absence.csv file is pre-parsed and converted Dos->Unix using Perl one-liner 
 
@@ -13,6 +13,10 @@ use strict;
 use warnings; 
 use Data::Dumper; 
 
+if (scalar @ARGV != 4) {
+  print STDERR "Usage: ./make_ortholog_table.pl <full_wdir> <roary_unix_tsv> <bacpipe_config> <modified_ref_fa>\n";
+  exit 1
+}
 
 my $wdir = shift @ARGV; 
 my $roary_unix_csv = shift @ARGV; 

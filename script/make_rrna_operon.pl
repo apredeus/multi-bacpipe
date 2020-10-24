@@ -8,8 +8,8 @@ use strict;
 use warnings; 
 use Data::Dumper; 
 
-if ($#ARGV != 1) {
-  die "USAGE: make_rrna_operon.pl <prokka_gff> <gene_gff>\n";
+if (scalar @ARGV != 2) {
+  die "Usage: ./make_rrna_operon.pl <prokka_gff> <gene_gff>\n";
 }
 
 my $prokka_gff = shift @ARGV; 

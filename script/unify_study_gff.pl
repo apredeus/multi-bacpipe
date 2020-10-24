@@ -7,7 +7,12 @@
 
 use strict; 
 use warnings; 
-#use Data::Dumper; 
+use Data::Dumper; 
+
+if (scalar @ARGV != 3) { 
+  print STDERR "Usage: ./unify_study_gff.pl <prokka_gff> <ref_blast_out> <modified_ref_fa>\n";
+  exit 1
+}
 
 my $prokka_gff = shift @ARGV; 
 my $blast_out = shift @ARGV; 
@@ -28,9 +33,9 @@ my %length;
 my $genes = {};
 my $blast = {};
 my $count = 1; 
-$tag =~ m/(.*?)_.*/; 
-my $prefix = $1; ## locus tag prefix, use same as Prokka 
+my $prefix = ($tag =~ m/(.*?)_.*/) ? $1 : $tag; ## if strain is called something like P125109_v1, use P125109 for lt 
 
+print STDERR "DEBUG: $tag $prefix\n"; 
 ## read reference fasta (possibly folded), get length of each sequence 
 
 my $seq_name;
@@ -82,8 +87,6 @@ while (<BLAST>) {
     } 
   } 
 }
-
-#print Dumper $blast;
 
 foreach my $name (keys %{$blast}) { 
   if (scalar keys %{$blast->{$name}} == 1) { 

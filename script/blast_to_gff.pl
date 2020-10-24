@@ -7,16 +7,16 @@ use strict;
 use warnings; 
 #use Data::Dumper; 
 
+if (scalar @ARGV != 2) {
+  print STDERR "Usage: ./blast_to_gff.pl <ref_blast_out> <modified_ref_fa>\n";
+  exit 1
+}
+
 my $blast_out = shift @ARGV; 
 my $ref_fa = shift @ARGV; 
-my $tag = $blast_out; 
-$tag =~ s/.ref_blast.out//g;  
-
-my $blast_gff = $tag.".blast.gff";
 
 open BLAST_OUT,"<",$blast_out or die "$!"; 
 open REF_FA,"<",$ref_fa or die "$!"; 
-open BLAST_GFF,">",$blast_gff or die "$!"; 
 
 my %length;
 my $blast = {};
@@ -105,11 +105,10 @@ foreach my $chr (keys %{$blast})  {
       my $type = $blast->{$chr}->{$name}->{$hit}->{type};
       my $strand = $blast->{$chr}->{$name}->{$hit}->{strand};
       my $lt = join "_",$name,$chr,$beg;  
-      printf BLAST_GFF "%s\tBacpipe\t%s\t%d\t%d\t.\t%s\t.\tID=%s;\n",$chr,$type,$beg,$end,$strand,$lt;
+      printf "%s\tBacpipe\t%s\t%d\t%d\t.\t%s\t.\tID=%s;\n",$chr,$type,$beg,$end,$strand,$lt;
     }  
   } 
 }
 
 close BLAST_OUT; 
 close REF_FA;
-close BLAST_GFF; 

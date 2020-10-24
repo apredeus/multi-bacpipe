@@ -3,8 +3,8 @@
 use strict; 
 use warnings; 
 
-if ($#ARGV < 1) {
-  print "USAGE: ./simple_exp_tables.pl <working_dir> <tag>\n";
+if (scalar @ARGV != 2) {
+  print "Usage: ./simple_exp_tables.pl <full_wdir> <tag>\n";
   exit 1
 }
 

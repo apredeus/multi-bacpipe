@@ -28,10 +28,7 @@ fi
 
 if [[ $REF == "" ]] 
 then
-  echo "==> No extra reference was specified, additional small CDS and ncRNAs will not be added."
-elif [[ $REF == "prokka" ]]
-then
-  echo "==> Option \"-r prokka\" activated, ncRNAs will be identified using Prokka's built-it Rfam database"
+  echo "==> No extra reference was specified, ncRNAs will be predicted using Prokka's --rfam."
 else 
   echo "==> External reference fasta $REF will be used to annotate additional ncRNA and CDS"
 fi 
@@ -125,15 +122,9 @@ N_OP=`awk '$3-$2>3000' $TAG.rRNA.bed | wc -l`
 echo "==> Making combined rRNA operon interval file: Identified $N_OP rRNA operons, $N_INT intervals overall." 
 
 ## mv all necessary files to the appropriate ref dirs 
-mv $TAG.gene.gff $TAG.prokka ${TAG}.STAR $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $TAG.rRNA.bed $WDIR/study_strains/$TAG
-mv $TAG.united.gff $TAG.CDS.gff $TAG.ncRNA.gff $TAG.prophage_overlap.tsv $WDIR/study_strains/$TAG  || : 
-
-if [[ -f $TAG.ref_blast.out ]]
-then
-  mv $TAG.ref_blast.out $TAG.match.tsv $WDIR/study_strains/$TAG
-  rm ${TAG}.blast.n*
-fi 
-
+mv $TAG.gene.gff $TAG.united.gff $TAG.CDS.gff $TAG.ncRNA.gff $TAG.rRNA.bed $WDIR/study_strains/$TAG
+mv $TAG.prokka ${TAG}.STAR $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $WDIR/study_strains/$TAG
+mv $TAG.ref_blast.out $TAG.match.tsv $TAG.prophage_overlap.tsv $WDIR/study_strains/$TAG  || : 
 
 echo "==> All the generated files and indexes have been moved to $WDIR/study_strains/$TAG."
 echo "==> Strain $TAG: all reference files successfully generated!"

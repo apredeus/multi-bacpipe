@@ -6,6 +6,11 @@
 use strict; 
 use warnings; 
 
+if (scalar @ARGV != 1) {
+  print STDERR "Usage: ./fcount_tpm.pl <featureCounts_out>\n";
+  exit 1
+}
+
 my $fcout = shift @ARGV; 
 
 open FCOUT,"<",$fcout or die "$!"; 
