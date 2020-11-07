@@ -28,25 +28,26 @@ wait
 ```
 After all of the downloading is done, rename and gzip the fastq files:
 ```bash
-gzip SRR957050.fastq > WT_rep1.fastq.gz & 
-gzip SRR957051.fastq > WT_rep2.fastq.gz & 
-gzip SRR957052.fastq > WT_rep3.fastq.gz & 
-gzip SRR957053.fastq > misR_KO_rep1.fastq.gz & 
-gzip SRR957054.fastq > misR_KO_rep2.fastq.gz & 
-gzip SRR957055.fastq > misR_KO_rep3.fastq.gz & 
+gzip -c SRR957050.fastq > WT_rep1.fastq.gz & 
+gzip -c SRR957051.fastq > WT_rep2.fastq.gz & 
+gzip -c SRR957052.fastq > WT_rep3.fastq.gz & 
+gzip -c SRR957053.fastq > misR_KO_rep1.fastq.gz & 
+gzip -c SRR957054.fastq > misR_KO_rep2.fastq.gz & 
+gzip -c SRR957055.fastq > misR_KO_rep3.fastq.gz & 
 wait
 rm SRR*fastq
 ```
 
 While read download and processing is happening, let's download and rename the reference genome and its annotation. We will use strain [FA19](https://www.ncbi.nlm.nih.gov/assembly/GCA_001047225.1) GenBank assembly and annotation. 
 
-```bashi
+```bash
 wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/001/047/225/GCA_001047225.1_ASM104722v1/GCA_001047225.1_ASM104722v1_genomic.fna.gz
 wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/001/047/225/GCA_001047225.1_ASM104722v1/GCA_001047225.1_ASM104722v1_genomic.gff.gz
 gzip -d GCA*gz
 mv GCA_001047225.1_ASM104722v1_genomic.fna FA19.fa
 mv GCA_001047225.1_ASM104722v1_genomic.gff FA19.gff
 ```
+
 Additionally, let's make a prophage interval file. As a crude estimate, we can use [PHASTER](http://phaster.ca/) results, that predict the presence of 4 prophage-like elements in FA19: 
 
   | Chromosome | Begin   |  End    | Name |
@@ -97,8 +98,8 @@ Processing differs significantly for multiple strains. In order to demonstrate h
 First of all, let's choose a directory with plenty (~ 50 Gb) of space and enter it.
 
 ```bash 
-mkdir stm_tutorial
-cd stm_tutorial
+mkdir Stm_tutorial
+cd Stm_tutorial
 ```
 
 After this, download the fastq files using `sra-tools` from NCBI. These tools could be installed with `conda install sra-tools`. If you get an error about unknown option, replace `--split-3` with `--split-e`.
@@ -117,17 +118,19 @@ wait
 ```
 
 After all of the downloading is done, let's give the files more informative names and archive them:
+
 ```bash 
-mv SRR7814112.fastq D23_InSPI2_rep2.fastq
-mv SRR7814113.fastq D23_InSPI2_rep3.fastq
-mv SRR7814114.fastq D23_InSPI2_rep4.fastq
-mv SRR7814145.fastq 474_InSPI2_rep2.fastq
-mv SRR7814146.fastq 474_InSPI2_rep3.fastq 
-mv SRR7814147.fastq 474_InSPI2_rep4.fastq
+gzip -c SRR7814112.fastq > D23_InSPI2_rep2.fastq.gz &
+gzip -c SRR7814113.fastq > D23_InSPI2_rep3.fastq.gz &
+gzip -c SRR7814114.fastq > D23_InSPI2_rep4.fastq.gz &
+gzip -c SRR7814145.fastq > 474_InSPI2_rep2.fastq.gz &
+gzip -c SRR7814146.fastq > 474_InSPI2_rep3.fastq.gz &
+gzip -c SRR7814147.fastq > 474_InSPI2_rep4.fastq.gz &
+wait
 gzip *fastq
 ```
 
-While the files are compressed, let's download the reference files we shall need for the multi-strain processing. First, create **study_strains** and **ref_strains** directories inside our main working directory, **stm_tutorial**. After this, let's download genome assemblies and GFF annotations (GenBank versions) of D23580 and 4/74. 
+While the files are compressed, let's download the reference files we shall need for the multi-strain processing. First, create **study_strains** and **ref_strains** directories inside our main working directory, **Stm_tutorial**. After this, let's download genome assemblies and GFF annotations (GenBank versions) of D23580 and 4/74. 
 
 ```bash
 mkdir study_strains ref_strains fastqs

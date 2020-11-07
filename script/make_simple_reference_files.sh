@@ -64,5 +64,10 @@ echo "==> rRNA/tRNA operon interval file $TAG.rRNA.bed successfully created"
 mv $TAG.genome.fa $TAG.genome.fa.fai $TAG.chrom.sizes $TAG.gene.gff $WDIR/study_strains/$TAG
 mv $TAG.prokka ${TAG}.STAR $TAG.rRNA.bed $WDIR/study_strains/$TAG
 
+if [[ -f $TAG.prophage.bed ]]
+then
+  cp $TAG.prophage.bed $WDIR/study_strains/$TAG
+fi
+
 echo "All the generated files and indexes have been moved to $WDIR/study_strains/$TAG."
 echo "Strain $TAG: all done generating reference!" 
