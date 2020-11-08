@@ -51,14 +51,14 @@ mv GCA_001047225.1_ASM104722v1_genomic.gff FA19.gff
 
 Additionally, let's make a prophage interval file. As a crude estimate, we can use [PHASTER](http://phaster.ca/) results, that predict the presence of 4 prophage-like elements in FA19: 
 
-  | Chromosome | Begin   |  End    | Name |
-  |------------|---------|---------|------|
-  | CP012026.1 | 191612  | 239575  | Ph1  |
-  | CP012026.1 | 451221  | 474055  | Ph2  | 
-  | CP012026.1 | 851813  | 880939  | Ph3  |
-  | CP012026.1 | 1367842 | 1402902 | Ph4  |
+```bash
+CP012026.1	191612	239575	Ph1		
+CP012026.1	451221	474055	Ph2			
+CP012026.1	851813	880939	Ph3		
+CP012026.1	1367842	1402902	Ph4		
+```
 
-Simply use any text editor and make the file called FA19.prophage.bed. Take the data from the table (without the header) and replace all spaces with a tab. Alternatively, download the file from [here](https://www.dropbox.com/s/luamz7n9m8wpe67/FA19.prophage.bed).
+Simply use any text editor, copy the table above, and save it as a text file named *FA19.prophage.bed*. Alternatively, download the file from [here](https://www.dropbox.com/s/luamz7n9m8wpe67/FA19.prophage.bed).
 
 ### Reference preparation
 
