@@ -74,6 +74,15 @@ conda install diamond=2.0.4
 
 For the easiest introduction, please follow the bacpipe [tutorial](https://github.com/apredeus/multi-bacpipe/blob/master/tutorial/TUTORIAL.md). 
 
+## Used terms
+We use the following terms during the multi-strain RNA-seq analysis: 
+
+* **study strains** - strains used for the experiment that is being processed;
+* **reference strains** - related, well-annotated strains used as a reference for annotation; 
+* **key strain** - one of reference strains which locus tags could be used when there's no gene name, e.g. STM IDs from LT2 for *Salmonella enterica* serovar Typhimurium;
+* **working directory** - a directory where analysis is done; any writeable directory with enough space; 
+* **strain tag** - an unique identifier describing a study or a reference strain; 
+
 ## Setting up the working directory
 After you have chosen your working directory (**with enough space and where you have write permissions**), you need to create a sub-directory named **fastqs**. 
 Place your archived RNA-seq *fastq* files here. Stick to the following naming rules: 
@@ -83,58 +92,64 @@ Place your archived RNA-seq *fastq* files here. Stick to the following naming ru
 
 If you have more than one file per sample (e.g. if it was sequenced twice), you must merge these files first.
 
-## Used terms
-We use the following terms during the multi-strain RNA-seq analysis: 
-
-* **study strains** - strains used for the experiment that is being processed;
-* **reference strains** - related, well-annotated strains used as a reference for annotation; 
-* **key strain** - one of reference strains which locus tags could be used when there's no gene name, e.g. STM IDs from LT2 for *Salmonella enterica* serovar Typhimurium;
-* **working directory** - a directory where analysis is done; any writeable directory with enough space; 
-* **strain tag** - an unique identifier describing a study or a reference strain; 
-* **roary-friendly GFF** - GFF file formatted accordingly to criteria listed below, in [Reference strain requirements](https://github.com/apredeus/multi-bacpipe#reference-strain-requirements).
-
-## Configuration file
-Multi-strain processing is relying onto single-strain processing principles, described in [Bacpipe README](https://github.com/apredeus/bacpipe). In order to process multiple strains, you would need to make a simple tab-separated configuration file. The file should contain one tab-separated sample ID - strain ID pair per line. It should also include all of the strains that you want to use as a reference: 
-
-```
-Sample_ID1	Ecoli_O157_H7
-Sample_ID2	Ecoli_O157_H7
-Sample_ID3	Ecoli_O104_H4
-Sample_ID4	Ecoli_O104_H4
-Reference	MG1655
-Reference	DH5a
-Reference	DE3
-```
-
-See details on reference preparation below. 
-
-## Reference strain requirements 
-For each reference strain, you need to have a Roary-style GFF file placed into **ref_strains** subdirectory in your working directory. Expected name format is <tag>.roary.gff. Each file needs to satisfy the following criteria: 
-
-* File consists of three parts, similar to Prokka output: 1) tab-separated GTF annotation; 2) ##FASTA delimiter; 3) strain's genomic fasta.
-* Only coding sequence features (*CDS*) are present - no *gene*, *sequence_feature*, etc.; 
-* Each coding seqeunce is annotated with a **unique** ID - locus tag for this strain; 
-* If there's a common name for a gene associated with this CDS, it's given in Name= field; 
-* If there is no common name reported, no Name is given. 
-
-I provide a script called **ncbi_to_roary.pl** that converts NCBI-style genomic GFF and FNA (nucleotide FASTA) into required Roary GFF *most of the time*. Few NCBI annotations, like CT18, are truly horrific and require manual parsing, if you insist on using them. 
-
 ## Reference preparation 
+Please refer to [Tutorial](https://github.com/apredeus/multi-bacpipe/blob/master/tutorial/TUTORIAL.md) for an easy example of reference preparation in both `--simple` and `--multi` modes.
 ### 1. Simple mode 
-In simple mode, things are simple. 
-### 2. Multi-strain mode 
-In multi mode, things are not so simple.
+In simple mode (one strain used for all experiments), you'll need to create a directory named **study_strains** and place two appropriately named files in it: 1) full genome assembly, *strain_tag.fa*; 2) GFF3 annotation, *strain_tag.gff*. Additionally, you can add a simple 4-column BED file that defines prophages and other regions of interest - e.g. pathogenicity islands or AR cassettes. For example, if you're using *Salmonella enterica* strain LT2, the files need to be called *LT2.fa* and *LT2.gff* (and, optionally, *LT2.prophage.bed*). After this, simply run the following command from your working directory (in which **fastqs** and **study_strains** are located):
 
-## Prophage and rRNA/tRNA regions 
-In order to provide additional information, all study strains need a BED file with putative prophage intervals. These can be generated by parsing the output of [PHASTER](http://phaster.ca/).  
-Another important file is rRNA operon and tRNA BED file. It's used to accurately calculate the stats, especially the percentage of multi-mapping and un-assigned reads **after rRNA removal**. This file would be automatically generated from Prokka annotation when reference is prepared by `prepare_bacterial_reference`.
+`prepare_bacterial_reference --simple . <strain_tag>`
+
+This will generate **strain_tag** subdirectory inside **study_strains**, as well as config file *simple.cfg*, which consists of simple, tab-separated table of samples and the reference strain: 
+
+``` 
+Sample_ID1	<strain_tag>
+Sample_ID2	<strain_tag>
+Sample_ID3	<strain_tag>
+Sample_ID4	<strain_tag>
+```
+
+### 2. Multi-strain mode 
+In multi-strain mode, more preparations are needed. First, create a directory named **ref_strains** and place two appropriately named files (full genome assembly, *strain_tag.fa*, and GFF3 annotation, *strain_tag.gff*) for each strain you want to use as a reference. Second, create a directory named **study_strains** and place 
+
+#### Config file
+In contrast to `--simple` mode, here you'll need to make the config file yourself. Take your favourite text editor and make a simple tab-separated text file. Each sample should be matched by appropriate study strain tag. Below all samples, list all available reference strains as "Reference" entries: 
+
+```
+Sample_ID1	<study_tag1>
+Sample_ID2	<study_tag1>
+Sample_ID3	<study_tag2>
+Sample_ID4	<study_tag2>
+Reference	<ref_tag1>
+Reference	<ref_tag2>
+Reference	<ref_tag3>
+```
+Optionally, you can also add prophage BED file to each of the study strains, and place the files (named *study_tag.prophage.bed*) into **study_strains** directory. 
+
+#### Extra ncRNA/small CDS files 
+In multi-strain mode, you can have an option to add a fasta file of non-coding RNAs and small ORFs identified in a closely related strain. The file should be a simple FASTA, formatted as follows: 
+
+```
+>STnc710.ncRNA
+GTTTGGGTTCAAGTTAGCCCCCGTCAGGTTGCCAGGTTTATACCAGTCAACGTGCGGGGGTTTTCTCT
+>SdsR.ncRNA
+GCAAGGCGATTTAGCCTGCATTAATGCCAACTTTTAGCGCACGGCTCTCTCCCAAGAGCCATTTCCCTGGACCGAATACAGGAATCGTATTCGGTCTCTTTTT
+>STnc3090.ncRNA
+GCACGACGGTGGCCTTGACGACAACCTTCCTGGTGAATCCGGCTAAGGAGTAGAGTGGATTTCCCTTGGCCACCTCTGGCTTTGGCCTCTACTTTTCTCCAGGTCGTTTGCTGCCAAGACACCGCCGTGCGTT
+>IsrB2.ncRNA
+AAAACGCCCACCGAAGCGGGCGTGCCCTGTCCGGTCCAACCGACCAAAGCGAACCGGACCTAACAACCAGATATATCGGGGTGCTGTTAAGGCA
+>mia-3.CDS
+ATGACACTTTATTCTCTGAACGCACTTTGCAGACCTTTCCAGGATTAA
+>mia-127.misc
+ATGCTGGAGAATGTCATCATCTGA
+```
+Each feature can belong to one of the three categories: 1) ncRNA; 2) CDS; 3) misc. Categories differ in their downstream processing - e.g. ncRNAs overlapping CDS on the same strand are allowed, while a shorter CDS will be removed. "Misc" category is useful for pseudogenes, selenocysteine-coding genes, etc. 
 
 ## One-command RNA-seq processing
 After all the references are successfully created and placed appropriately, run 
 
-`bacpipe <ref_dir> <config> [-p CPUs] [-k key_strain]`
+`bacpipe <ref_dir> <config> [-p CPUs] [-k key_strain] &> bacpipe.log`
 
-Bacpipe needs to be ran in a writeable directory with fastqs, study_strains, ref_strains, and (in case of multi-strain mode) a roary folders in it. 
+Bacpipe should to be ran in a writeable directory with **fastqs**, **study_strains**, and (in case of `--multi`), **ref_strains** directories, as well as config file. Key strain option can only be used in `--multi` mode. It defines a reference strain which locus tag could be used to replace a generic *group_number* ID in the final expression table. 
 
 ## Main pipeline steps
 
