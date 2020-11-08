@@ -12,11 +12,11 @@ GRN2='\033[0;32m'
 UL='\033[4;34m'
 NC='\033[0m' # No Color
 
-if [[ $# < 2 && $1 != "clean" ]] 
+if [[ $# < 2 && $1 != "clean" && $1 != "refclean" ]] 
 then
   echo
   echo "Version:"
-  echo "  v0.7.0, Alexander Predeus (predeus@gmail.com), 2020" 
+  echo "  v0.8.0, Alexander Predeus (predeus@gmail.com), 2020" 
   echo "Synopsis:"
   echo "  Process multistrain bacterial RNA-seq data using pre-created reference."
   echo "Usage:" 
@@ -37,6 +37,21 @@ elif [[ $1 == "clean" ]]
 then 
   echo "Cleaning up the working directory..."
   rm -rf bams exp_tables FastQC featureCounts stats strand tdfs_and_bws
+  exit 1
+elif [[ $1 == "refclean" ]]
+then 
+  echo "Cleaning up previously generated reference files..."
+  rm -rf roary orthologs.tsv 
+  RS=`ls ref_strains/ | grep -v "\.fa" | grep -v "\.gff"`
+  SS=`ls study_strains/ | grep -v "\.fa" | grep -v "\.bed"`
+  for i in $RS
+  do 
+    rm -rf ref_strains/$i
+  done 
+  for i in $SS
+  do
+    rm -rf study_strains/$i
+  done
   exit 1
 fi
 

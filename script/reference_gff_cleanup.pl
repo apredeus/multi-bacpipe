@@ -140,7 +140,7 @@ foreach my $lt (@keys) {
     ## biotype: protein_coding, pseudogene, tRNA, rRNA, ncRNA, other
     ## type: CDS, tRNA, rRNA, ncRNA, other?
     if ($type eq "NONE" && $biotype eq "NONE") {
-      print STDERR "DEBUG: feature $lt does not have a defined type OR biotype!\n"; 
+      #print STDERR "DEBUG: feature $lt does not have a defined type OR biotype!\n"; 
     } elsif ($type eq "NONE") {
       $type = $biotype; 
       $type = "CDS" if ($biotype eq "protein_coding"); 

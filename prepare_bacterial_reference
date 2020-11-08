@@ -11,7 +11,7 @@ if [[ $# < 3 ]]
 then
   echo
   echo "Version:"
-  echo "  v0.7.0, Alexander Predeus (predeus@gmail.com), 2020"  
+  echo "  v0.8.0, Alexander Predeus (predeus@gmail.com), 2020"  
   echo "Synopsis:"
   echo "  One-command bacterial RNA-Seq reference preparation."
   echo 
@@ -38,7 +38,7 @@ then
   echo "  -r [X]         (multi-strain only) Additional reference nucleotide sequences to be added to the final annotation via Blastn"
   echo "                 If -r prokka is selected, ncRNAs would be predicted using Rfam functionality in Prokka"
   echo "                 If an external fasta file is provided, each sequence should be named using ><name>.<type> convention"
-  echo "                 Types can be \"CDS\", \"ncRNA\", or \"misc\" - e.g. >RygC.ncRNA, >trpL.CDS, or fdnG.misc"
+  echo "                 Types can be \"CDS\", \"ncRNA\", or \"misc\" - e.g. >RygC.ncRNA, >trpL.CDS, or >fdnG.misc"
   echo  
   echo 
   exit 1

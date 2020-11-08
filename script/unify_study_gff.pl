@@ -35,7 +35,6 @@ my $blast = {};
 my $count = 1; 
 my $prefix = ($tag =~ m/(.*?)_.*/) ? $1 : $tag; ## if strain is called something like P125109_v1, use P125109 for lt 
 
-print STDERR "DEBUG: $tag $prefix\n"; 
 ## read reference fasta (possibly folded), get length of each sequence 
 
 my $seq_name;

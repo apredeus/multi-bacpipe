@@ -144,6 +144,15 @@ ATGCTGGAGAATGTCATCATCTGA
 ```
 Each feature can belong to one of the three categories: 1) ncRNA; 2) CDS; 3) misc. Categories differ in their downstream processing - e.g. ncRNAs overlapping CDS on the same strand are allowed, while a shorter CDS will be removed. "Misc" category is useful for pseudogenes, selenocysteine-coding genes, etc. 
 
+## GFF file processing 
+There is an impressive variety of GFF files that can be downloaded from GenBank or RefSeq. In order to make the analysis more robust, GFF files of each reference strain (or the study strain in case of `--simple` workflow) is pre-processed. However, pre-processing is done differently for `--multi` and `--simple` workflows.
+
+### Simple workflow
+In simple workflow, all features with defined `locus_tag` are preserved. Additionally, all non-rRNA/tRNA features are given a surrogate locus tag as well. A new GFF file is generated in which each feature is listed as a `gene` for `featureCounts` quantification. 
+ 
+### Multi workflow
+In multi workflow, only protein-coding and pseudogene features that have a defined `locus_tag` are used. Pseudogenes are converted to a smaller CDS using the longest annotated ORF. Resulting features are used to generate protein ortholog table using `Roary`. 
+
 ## One-command RNA-seq processing
 After all the references are successfully created and placed appropriately, run 
 

@@ -349,7 +349,6 @@ if (! defined $ref_fa) {
   
       $genes->{$strain}->{$lt}->{rname} = $rname if ($lt ne "NONE");
       ## we want to skip misc - if there's already blast entry associated with at least 1 lt, skip the whole roary line 
-      printf STDERR "DEBUG: undef for %s %s %s\n",$strain,$lt,$blast_type->{$genes->{$strain}->{$lt}->{bname}} if (! defined $blast_type->{$genes->{$strain}->{$lt}->{bname}});
       if (defined $genes->{$strain}->{$lt}->{bname} && $blast_type->{$genes->{$strain}->{$lt}->{bname}} eq "misc") {
         delete $names->{$rname}->{roary}; 
         next OUTER; 
@@ -374,6 +373,8 @@ if (! defined $ref_fa) {
   }
   close FA; 
 } 
+
+#print STDERR Dumper $names;
 
 ## you got all orthology records in $names now; it's just down to printing them 
 print "$new_header\n";    
