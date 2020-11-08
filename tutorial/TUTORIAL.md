@@ -75,27 +75,27 @@ We should be all set to go. Let's run the reference preparation in `--simple` mo
 
 Your logs should look something like this: 
 
-> ==> Initiating bacpipe reference preparation for SIMPLE SINGLE-STRAIN workflow!
-> ==> Following variables were set:
-> 
->               WDIR: .
->                TAG: FA19
->               CPUS: 8
-> 
-> ==> Parallel jobs will be ran on 8 cores.
-> Directory /pub37/alexp/data/rnaseq/for_bacpipe_paper/ngon_misR_GSE50184/study_strains/FA19 was not found and will be created.
-> ==> Running Prokka annotation to identify tRNA and rRNA loci
-> FA19.gff annotation file processed; found 0 gene entries without a locus tag, for which new locus tags were generated.
-> Parsed GFF stats: 2220 protein coding, 0 pseudogenes, 1 noncoding RNAs, 56 tRNAs, 12 rRNAs, 0 others.
-> ==> Files FA19.genome.fa and FA19.gene.gff successfully generated
-> ==> STAR aligner index FA19.STAR successfully generated
-> ==> rRNA/tRNA operon interval file FA19.rRNA.bed successfully created
-> All the generated files and indexes have been moved to /pub37/alexp/data/rnaseq/for_bacpipe_paper/ngon_misR_GSE50184/study_strains/FA19.
-> Strain FA19: all done generating reference!
-> ==> Checking study strain FA19:
-> - all necessary annotation files and directories for FA19 exist and are not empty.
-> ==> Writing simple config file, simple.cfg
-> ==> DONE generating simple single-strain reference!
+>&nbsp;==> Initiating bacpipe reference preparation for SIMPLE SINGLE-STRAIN workflow!
+>&nbsp;==> Following variables were set:
+>&nbsp;
+>&nbsp;              WDIR: .
+>&nbsp;               TAG: FA19
+>&nbsp;              CPUS: 8
+>&nbsp;
+>&nbsp;==> Parallel jobs will be ran on 8 cores.
+>&nbsp;Directory /pub37/alexp/data/rnaseq/for_bacpipe_paper/ngon_misR_GSE50184/study_strains/FA19 was not found and will be created.
+>&nbsp;==> Running Prokka annotation to identify tRNA and rRNA loci
+>&nbsp;FA19.gff annotation file processed; found 0 gene entries without a locus tag, for which new locus tags were generated.
+>&nbsp;Parsed GFF stats: 2220 protein coding, 0 pseudogenes, 1 noncoding RNAs, 56 tRNAs, 12 rRNAs, 0 others.
+>&nbsp;==> Files FA19.genome.fa and FA19.gene.gff successfully generated
+>&nbsp;==> STAR aligner index FA19.STAR successfully generated
+>&nbsp;==> rRNA/tRNA operon interval file FA19.rRNA.bed successfully created
+>&nbsp;All the generated files and indexes have been moved to /pub37/alexp/data/rnaseq/for_bacpipe_paper/ngon_misR_GSE50184/study_strains/FA19.
+>&nbsp;Strain FA19: all done generating reference!
+>&nbsp;==> Checking study strain FA19:
+>&nbsp;- all necessary annotation files and directories for FA19 exist and are not empty.
+>&nbsp;==> Writing simple config file, simple.cfg
+>&nbsp;==> DONE generating simple single-strain reference!
 
 Note the statistics of the GFF file (2220 protein coding, 0 pseudogenes, 1 noncoding RNAs, 56 tRNAs, 12 rRNAs, 0 others). If this is different from what you expect for your strain, examine the GFF file for the reason of such discrepancies.
 
@@ -152,13 +152,17 @@ This shows us the raw read numbers (read pairs for paired-end experiments). In t
 
 After you've successfully completed the processing, you can use the obtained expression tables to get PCA, clustering, and differential expression analysis. A quick and interactive processing can be done in [Phantasus](http://genome.ifmo.ru/phantasus-dev/). Taking annotated table of counts (*FA19.annotated.counts.tsv*), we can upload the table to the web tool, normalize it (Adjust, log2-transform, quantile normalize), and run PCA analysis (Tools -> Plots -> PCA plot). This should give us the following plot, indicating clear separation of mutants from WT samples: 
 
-<img align="center" src="https://github.com/apredeus/multi-bacpipe/blob/master/img/PCA.png">
+<p align="center">
+  <img src="https://github.com/apredeus/multi-bacpipe/blob/master/img/PCA.png?raw=true" alt="PCA plot for FA19 WT/misR KO RNA-seq"/>
+</p>
 
 Quick differential expression using limma (Tools -> Differential expression -> limma) generates the following picture, identifying genes up- and down-regulated in misR mutants: 
 
-<img align="center" src="https://github.com/apredeus/multi-bacpipe/blob/master/img/heatmap.png">
+<p align="center">
+  <img src="https://github.com/apredeus/multi-bacpipe/blob/master/img/heatmap.png?raw=true" alt="Limma differential expression analysis for FA19 WT/misR KO RNA-seq"/>
+</p>
 
-Overall, the pipeline streamlines the processing of simple, one-strain RNA-seq experiments.
+Overall, `bacpipe` streamlines the processing of simple, single-strain RNA-seq experiments.
 
 ## Multi-strain ("multi") workflow
 
