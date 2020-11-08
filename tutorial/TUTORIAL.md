@@ -75,27 +75,27 @@ We should be all set to go. Let's run the reference preparation in `--simple` mo
 
 Your logs should look something like this: 
 
->&nbsp;==> Initiating bacpipe reference preparation for SIMPLE SINGLE-STRAIN workflow!
->&nbsp;==> Following variables were set:
->&nbsp;
->&nbsp;              WDIR: .
->&nbsp;               TAG: FA19
->&nbsp;              CPUS: 8
->&nbsp;
->&nbsp;==> Parallel jobs will be ran on 8 cores.
->&nbsp;Directory /pub37/alexp/data/rnaseq/for_bacpipe_paper/ngon_misR_GSE50184/study_strains/FA19 was not found and will be created.
->&nbsp;==> Running Prokka annotation to identify tRNA and rRNA loci
->&nbsp;FA19.gff annotation file processed; found 0 gene entries without a locus tag, for which new locus tags were generated.
->&nbsp;Parsed GFF stats: 2220 protein coding, 0 pseudogenes, 1 noncoding RNAs, 56 tRNAs, 12 rRNAs, 0 others.
->&nbsp;==> Files FA19.genome.fa and FA19.gene.gff successfully generated
->&nbsp;==> STAR aligner index FA19.STAR successfully generated
->&nbsp;==> rRNA/tRNA operon interval file FA19.rRNA.bed successfully created
->&nbsp;All the generated files and indexes have been moved to /pub37/alexp/data/rnaseq/for_bacpipe_paper/ngon_misR_GSE50184/study_strains/FA19.
->&nbsp;Strain FA19: all done generating reference!
->&nbsp;==> Checking study strain FA19:
->&nbsp;- all necessary annotation files and directories for FA19 exist and are not empty.
->&nbsp;==> Writing simple config file, simple.cfg
->&nbsp;==> DONE generating simple single-strain reference!
+>&nbsp;==> Initiating bacpipe reference preparation for SIMPLE SINGLE-STRAIN workflow!  
+>&nbsp;==> Following variables were set:  
+>&nbsp;  
+>&nbsp;              WDIR: .  
+>&nbsp;               TAG: FA19  
+>&nbsp;              CPUS: 8  
+>&nbsp;  
+>&nbsp;==> Parallel jobs will be ran on 8 cores.  
+>&nbsp;Directory /pub37/alexp/data/rnaseq/for_bacpipe_paper/ngon_misR_GSE50184/study_strains/FA19 was not found and will be created.  
+>&nbsp;==> Running Prokka annotation to identify tRNA and rRNA loci  
+>&nbsp;FA19.gff annotation file processed; found 0 gene entries without a locus tag, for which new locus tags were generated.  
+>&nbsp;Parsed GFF stats: 2220 protein coding, 0 pseudogenes, 1 noncoding RNAs, 56 tRNAs, 12 rRNAs, 0 others.  
+>&nbsp;==> Files FA19.genome.fa and FA19.gene.gff successfully generated  
+>&nbsp;==> STAR aligner index FA19.STAR successfully generated  
+>&nbsp;==> rRNA/tRNA operon interval file FA19.rRNA.bed successfully created  
+>&nbsp;All the generated files and indexes have been moved to /pub37/alexp/data/rnaseq/for_bacpipe_paper/ngon_misR_GSE50184/study_strains/FA19.  
+>&nbsp;Strain FA19: all done generating reference!  
+>&nbsp;==> Checking study strain FA19:  
+>&nbsp;- all necessary annotation files and directories for FA19 exist and are not empty.  
+>&nbsp;==> Writing simple config file, simple.cfg  
+>&nbsp;==> DONE generating simple single-strain reference!  
 
 Note the statistics of the GFF file (2220 protein coding, 0 pseudogenes, 1 noncoding RNAs, 56 tRNAs, 12 rRNAs, 0 others). If this is different from what you expect for your strain, examine the GFF file for the reason of such discrepancies.
 
