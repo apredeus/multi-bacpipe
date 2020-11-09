@@ -33,7 +33,7 @@ then
   for i in $STUDY 
   do
     echo "Making raw count and TPM tables for strain $i."
-    PP=`grep -P "\t$i" $CONFIG | cut -f 1`
+    PP=`grep -P "\t$i$" $CONFIG | cut -f 1`
     FIRST=`echo $PP | awk '{print $1}'`
     echo -e $i > $i.names
     awk '{if (NR>2) print $1}' $FIRST.fc.tpm.tsv | sort -k1,1 >> $i.names
@@ -75,7 +75,7 @@ else
   done
   
   echo "Making raw count and TPM tables for strain $TAG."
-  PP=`grep -P "\t$TAG" $CONFIG | cut -f 1`
+  PP=`grep -P "\t$TAG$" $CONFIG | cut -f 1`
   FIRST=`echo $PP | awk '{print $1}'`
   echo -e $TAG > $TAG.names
   awk '{if (NR>2) print $1}' $FIRST.fc.tpm.tsv | sort -k1,1 >> $TAG.names

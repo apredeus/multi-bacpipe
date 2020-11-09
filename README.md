@@ -55,7 +55,7 @@ conda update conda
 conda create -n bacpipe
 conda activate bacpipe
 ```  
-After this, install all the necessary tools in the **bacpipe** environment:
+After this, install all the necessary tools in the `bacpipe` environment:
 
 ```bash
 conda install -c conda-forge -c bioconda -c defaults prokka=1.14.6
@@ -66,13 +66,14 @@ conda install star=2.7.6a
 conda install samtools=1.11
 conda install bedtools=2.29.2
 conda install igvtools=2.3.93
+conda install sratools=2.10.0
 conda install subread=2.0.1
 conda install emboss=6.6.0
 conda install diamond=2.0.4
 ```
 ## Tutorial
 
-For the easiest introduction, please follow the bacpipe [tutorial](https://github.com/apredeus/multi-bacpipe/blob/master/tutorial/TUTORIAL.md). 
+For the easiest introduction, please follow the `bacpipe` [Tutorial](https://github.com/apredeus/multi-bacpipe/blob/master/tutorial/TUTORIAL.md). 
 
 ## Used terms
 We use the following terms during the multi-strain RNA-seq analysis: 
@@ -123,7 +124,7 @@ Reference	<ref_tag1>
 Reference	<ref_tag2>
 Reference	<ref_tag3>
 ```
-Optionally, you can also add prophage BED file to each of the study strains, and place the files (named *study_tag.prophage.bed*) into **study_strains** directory. 
+Optionally, you can also add prophage BED file for each of the study strains, and place the files (named *study_tag.prophage.bed*) into **study_strains** directory. 
 
 #### Extra ncRNA/small CDS files 
 In multi-strain mode, you can have an option to add a fasta file of non-coding RNAs and small ORFs identified in a closely related strain. The file should be a simple FASTA, formatted as follows: 
@@ -133,8 +134,6 @@ In multi-strain mode, you can have an option to add a fasta file of non-coding R
 GTTTGGGTTCAAGTTAGCCCCCGTCAGGTTGCCAGGTTTATACCAGTCAACGTGCGGGGGTTTTCTCT
 >SdsR.ncRNA
 GCAAGGCGATTTAGCCTGCATTAATGCCAACTTTTAGCGCACGGCTCTCTCCCAAGAGCCATTTCCCTGGACCGAATACAGGAATCGTATTCGGTCTCTTTTT
->STnc3090.ncRNA
-GCACGACGGTGGCCTTGACGACAACCTTCCTGGTGAATCCGGCTAAGGAGTAGAGTGGATTTCCCTTGGCCACCTCTGGCTTTGGCCTCTACTTTTCTCCAGGTCGTTTGCTGCCAAGACACCGCCGTGCGTT
 >IsrB2.ncRNA
 AAAACGCCCACCGAAGCGGGCGTGCCCTGTCCGGTCCAACCGACCAAAGCGAACCGGACCTAACAACCAGATATATCGGGGTGCTGTTAAGGCA
 >mia-3.CDS
@@ -142,16 +141,16 @@ ATGACACTTTATTCTCTGAACGCACTTTGCAGACCTTTCCAGGATTAA
 >mia-127.misc
 ATGCTGGAGAATGTCATCATCTGA
 ```
-Each feature can belong to one of the three categories: 1) ncRNA; 2) CDS; 3) misc. Categories differ in their downstream processing - e.g. ncRNAs overlapping CDS on the same strand are allowed, while a shorter CDS will be removed. "Misc" category is useful for pseudogenes, selenocysteine-coding genes, etc. 
+Each feature can belong to one of the three categories: 1) ncRNA; 2) CDS; 3) misc. Categories differ in their downstream processing - e.g. ncRNAs overlapping CDS on the same strand are allowed, while a shorter CDS will be removed. "Misc" category is useful for annotation of pseudogenes, selenocysteine-coding genes, etc. 
 
 ## GFF file processing 
-There is an impressive variety of GFF files that can be downloaded from GenBank or RefSeq. In order to make the analysis more robust, GFF files of each reference strain (or the study strain in case of `--simple` workflow) is pre-processed. However, pre-processing is done differently for `--multi` and `--simple` workflows.
+There is an impressive variety of GFF file formats among the files that can be downloaded from GenBank or RefSeq. In order to make the analysis more robust, GFF files of each reference strain (or the study strain in case of `--simple` workflow) are pre-processed. However, pre-processing is done differently for `--multi` and `--simple` workflows.
 
 ### Simple workflow
-In simple workflow, all features with defined `locus_tag` are preserved. Additionally, all non-rRNA/tRNA features are given a surrogate locus tag as well. A new GFF file is generated in which each feature is listed as a `gene` for `featureCounts` quantification. 
+In simple workflow, all features with defined `locus_tag` are preserved. Additionally, all non-rRNA/tRNA features are given a surrogate locus tag as well (often, important ncRNAs lack a locus tag). A new GFF file is generated in which each feature is listed as a `gene` for `featureCounts` quantification. 
  
 ### Multi workflow
-In multi workflow, only protein-coding and pseudogene features that have a defined `locus_tag` are used. Pseudogenes are converted to a smaller CDS using the longest annotated ORF. Resulting features are used to generate protein ortholog table using `Roary`. 
+In multi workflow, only protein-coding and pseudogene features that have a defined `locus_tag` are used. Pseudogenes are converted to a smaller CDS using the longest annotated ORF. Resulting features are used to generate protein ortholog table using `Roary`. If provided, extra ncRNA/sORF annotation is then added to each study strain using `blastn`.
 
 ## One-command RNA-seq processing
 After all the references are successfully created and placed appropriately, run 

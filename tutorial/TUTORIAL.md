@@ -4,12 +4,16 @@ Below is the tutorial illustrating the way of processing of bacterial RNA-seq ex
 
 ## Which mode to use? 
 
-If you have RNA-seq experiments done in 1 strain, or strains that differ by a mutation/gene deletion/plasmid, use `--simple` with the reference that includes all elements of interest (e.g. if strains differ by a plasmid, make sure the plasmid is included in your reference sequence). If your strains differ substantially (e.g. multiple prophages and plasmids), use `--multi` mode. 
+If you have RNA-seq experiments done in 1 strain, or strains that differ by a mutation/gene deletion/plasmid, use `--simple` with the reference that includes all elements of interest (e.g. if strains differ by a plasmid, make sure the plasmid is included in your reference sequence). If your strains differ substantially (e.g. multiple prophages and plasmids), use `--multi` mode. Both workflows require at least one well-annotated reference strain, and work best with complete genome assemblies (i.e. full assembled chromosomes, and not contigs). 
+
+## Installation
+
+Before starting this tutorial, install `bacpipe` and all dependencies as described [here](https://github.com/apredeus/multi-bacpipe#installation-and-dependencies). 
 
 ## Single-strain ("simple") workflow 
 ### Downloading the necessary files
 
-In order to illustrate the processing of RNA-seq using `--simple` workflow, we will use the dataset [GSE50184](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE50184), studying the influence of *misR* regulon in *Neisseria gonorrhoeae*. The dataset consists of 6 samples - 3 replicates of the wildtype and *misR* knockout. 
+In order to illustrate the processing of RNA-seq using `--simple` workflow, we will use the dataset [GSE50184](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE50184), studying the influence of *misR* regulon in *Neisseria gonorrhoeae*. The dataset consists of 6 samples - 3 replicates each of the wildtype and *misR* knockout. 
 
 First of all, let's choose a directory with plenty of space and enter it. 
 
@@ -17,8 +21,7 @@ First of all, let's choose a directory with plenty of space and enter it.
 mkdir Ngo_tutorial
 cd Ngo_tutorial
 ```
-
-After this, download the fastq files and rename them. You'll need working SRA tools (could be installed with `conda install sra-tools`). If you get an error about unknown option, replace `--split-3` with `--split-e`. 
+After this, download the fastq files using `fastq-dump` tool from NCBI `sra-tools` from NCBI (If you get an error about unknown option, replace `--split-3` with `--split-e` in the commands below):
 
 ```bash
 for i in `seq 50 55`
@@ -64,12 +67,12 @@ Simply use any text editor, copy the table above, and save it as a text file nam
 
 After all the files are downloaded and renamed, set up the directory structure and move files to appropriate sub-directories:
 ```bash 
-mkdir fastqs      study_strains
-mv    *.fastq.gz  fastqs 
-mv    FA19.*      study_strains
+mkdir fastqs study_strains
+mv *.fastq.gz fastqs 
+mv FA19.* study_strains
 ```
 
-We should be all set to go. Let's run the reference preparation in `--simple` mode. Make sure you are in your main working directory - **Ngo_tutorial**. 
+We should be all set to go. Let's run the reference preparation in `--simple` mode. Make sure you are in your main working directory - **Ngo_tutorial**:
 
 `prepare_bacterial_reference --simple . FA19 -p 8`
 
@@ -137,7 +140,7 @@ Read number statistics are reported above:
  | WT_rep2            | FA19    | 7730590  | 4930697  | 119528    | 119860   | 2560505 | 2584079  |
  | WT_rep3            | FA19    | 11372201 | 5711041  | 1346176   | 206595   | 4108389 | 4211370  |
 
-This shows us the raw read numbers (read pairs for paired-end experiments). In this case we see that the experiments were not fully rRNA-depleted, with 8-18M initial reads and 2-4M reads assigned to annotated genes. Percentages of the initial reads are given below: 
+This shows us the raw read numbers (read pairs for paired-end experiments). In this case we see that the experiments were not fully rRNA-depleted, with 8-18 M initial reads and 2-4 M reads assigned to annotated genes. Percentages of the initial reads are given below: 
 
  | Sample             |  Strain |   rRNA   | unmapped | multimap  | 1_loc  | assigned |
  |--------------------|---------|----------|----------|-----------|--------|----------|
@@ -148,9 +151,11 @@ This shows us the raw read numbers (read pairs for paired-end experiments). In t
  | WT_rep2            | FA19    | 63.782   | 1.546    | 1.550     | 33.122 | 33.427   |
  | WT_rep3            | FA19    | 50.219   | 11.837   | 1.817     | 36.127 | 37.032   |
 
+The percentage of reads that don't map to rRNA/tRNA (multimap + 1_loc) is pretty close to "assigned" - meaning that the annotation does not miss any strongly expressed features. A larger difference would indicated that the annotation is missing some strongly expressed features (most commonly, ncRNA). 
+
 ### Downstream processing
 
-After you've successfully completed the processing, you can use the obtained expression tables to get PCA, clustering, and differential expression analysis. A quick and interactive processing can be done in [Phantasus](http://genome.ifmo.ru/phantasus-dev/). Taking annotated table of counts (*FA19.annotated.counts.tsv*), we can upload the table to the web tool, normalize it (Adjust, log2-transform, quantile normalize), and run PCA analysis (Tools -> Plots -> PCA plot). This should give us the following plot, indicating clear separation of mutants from WT samples: 
+After you've successfully completed the processing, you can use the obtained expression tables to get PCA, clustering, and differential expression analysis. A quick and interactive processing can be done in [Phantasus](http://genome.ifmo.ru/phantasus-dev/). Taking annotated table of counts (*FA19.annotated.counts.tsv*), we can upload the table to the web tool, normalize it (Adjust -> log2-transform -> quantile normalize), and run PCA analysis (Tools -> Plots -> PCA plot). This should give us the following plot, indicating clear separation of mutants from WT samples: 
 
 <p align="center">
   <img src="https://github.com/apredeus/multi-bacpipe/blob/master/img/PCA.png?raw=true" alt="PCA plot for FA19 WT/misR KO RNA-seq"/>
@@ -167,7 +172,7 @@ Overall, `bacpipe` streamlines the processing of simple, single-strain RNA-seq e
 ## Multi-strain ("multi") workflow
 ### Downloading the necessary files
 
-Processing differs significantly for multiple strains. In order to demonstrate how it works, we will use a small part of [GSE119724](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE119724) dataset, in which expression in *Salmonella* Typhimurium strains 4/74 and D23580 was compared under various *in vitro* conditions and inside macrophages. For simplicity, we will only use 6 samples of bacteria grown under *in vitro* conditions that induce SPI-2 gene expression (low pH, low phosphorus) - InSPI2. 
+Processing differs significantly for multiple strains. In order to demonstrate how it works, we will use a small part of [GSE119724](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE119724) dataset, in which expression in *Salmonella* Typhimurium strains 4/74 and D23580 (often shortened to D23) was compared under various *in vitro* conditions and inside macrophages. For simplicity, we will only use 6 samples of bacteria grown under *in vitro* conditions that induce SPI-2 gene expression (low pH, low phosphorus) - InSPI2. 
 
 First of all, let's choose a directory with plenty (~ 50 Gb) of space and enter it.
 
@@ -176,22 +181,17 @@ mkdir Stm_tutorial
 cd Stm_tutorial
 ```
 
-After this, download the fastq files using `sra-tools` from NCBI. These tools could be installed with `conda install sra-tools`. If you get an error about unknown option, replace `--split-3` with `--split-e`.
-
-
-Let's download the data: 
+After this, download the fastq files using `fastq-dump` tool from NCBI `sra-tools` from NCBI (If you get an error about unknown option, replace `--split-3` with `--split-e` in the commands below):
 
 ```bash 
-fastq-dump --split-3 SRR7814112 & 
-fastq-dump --split-3 SRR7814113 & 
-fastq-dump --split-3 SRR7814114 & 
-fastq-dump --split-3 SRR7814145 &
-fastq-dump --split-3 SRR7814146 &
-fastq-dump --split-3 SRR7814147 &
+for i in `seq 12 14` `seq 45 47`
+do
+  fastq-dump --split-3 SRR78141$i & 
+done
 wait
 ```
 
-After all of the downloading is done, let's give the files more informative names and archive them:
+After all of the downloading is done, let's give the files more informative names and compress them, deleting the original SRR files:
 
 ```bash 
 gzip -c SRR7814112.fastq > D23_InSPI2_rep1.fastq.gz &
@@ -204,23 +204,48 @@ wait
 rm SRR*fastq
 ```
 
-While the files are compressed, let's download the reference files we shall need for the multi-strain processing. First, create **study_strains** and **ref_strains** directories inside our main working directory, **Stm_tutorial**. After this, let's download genome assemblies and GFF annotations (GenBank versions) of D23580 and 4/74. 
+After this, let's download genome assemblies and GFF annotations (GenBank versions) for reference strains. We will use [old D23580](https://www.ncbi.nlm.nih.gov/assembly/GCA_000027025.1), [LT2](https://www.ncbi.nlm.nih.gov/assembly/GCA_000006945.2), and [SL1344](https://www.ncbi.nlm.nih.gov/assembly/GCA_000210855.2) (in order to be used as a reference strain, it needs to have a genomic GFF3 file available). For study strains, we will use the [new assembly of D23580](https://www.ncbi.nlm.nih.gov/assembly/GCA_900538085.1), and [4/74](https://www.ncbi.nlm.nih.gov/assembly/GCF_000188735.1/). It's also OK to use the same strain as a study and reference strain, but it's best to give them different strain tags. Here we will add "\_ref" to reference strain tags: 
+
+```bash
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/027/025/GCA_000027025.1_ASM2702v1/GCA_000027025.1_ASM2702v1_genomic.fna.gz
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/027/025/GCA_000027025.1_ASM2702v1/GCA_000027025.1_ASM2702v1_genomic.gff.gz
+gzip -d GCA*gz 
+mv GCA_000027025.1_ASM2702v1_genomic.fna D23_ref.fa
+mv GCA_000027025.1_ASM2702v1_genomic.gff D23_ref.gff
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/210/855/GCA_000210855.2_ASM21085v2/GCA_000210855.2_ASM21085v2_genomic.fna.gz
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/210/855/GCA_000210855.2_ASM21085v2/GCA_000210855.2_ASM21085v2_genomic.gff.gz
+gzip -d GCA*gz
+mv GCA_000210855.2_ASM21085v2_genomic.fna SL1344_ref.fa
+mv GCA_000210855.2_ASM21085v2_genomic.gff SL1344_ref.gff
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/006/945/GCA_000006945.2_ASM694v2/GCA_000006945.2_ASM694v2_genomic.fna.gz
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/006/945/GCA_000006945.2_ASM694v2/GCA_000006945.2_ASM694v2_genomic.gff.gz
+gzip -d GCA*gz
+mv GCA_000006945.2_ASM694v2_genomic.fna LT2_ref.fa
+mv GCA_000006945.2_ASM694v2_genomic.gff LT2_ref.gff 
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/188/735/GCA_000188735.1_ASM18873v1/GCA_000188735.1_ASM18873v1_genomic.fna.gz
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/900/538/085/GCA_900538085.1_D23580_liv/GCA_900538085.1_D23580_liv_genomic.fna.gz
+gzip -d GCA*gz
+mv GCA_000188735.1_ASM18873v1_genomic.fna 474.fa 
+mv GCA_900538085.1_D23580_liv_genomic.fna D23.fa 
+```
+
+Also download pre-made prophage BED files for [D23](https://www.dropbox.com/s/u75us6n1pgy3tka/D23.prophage.bed) and [474](https://www.dropbox.com/s/j8vhsi2qc74zntv/474.prophage.bed). These are the intervals generated by curated prophage annotation; a cruder, much faster estimate can be generated using [Phaster](http://phaster.ca/) online server. 
+
+Finally, let's download a file of Salmonella-specific ncRNAs, small ORFs, and pseudogenes/selenocysteine genes. 
+
+### Reference preparation 
+
+After all the necessary files have been downloaded, renamed, and compressed, let's place them in the appropriate folders: 
 
 ```bash
 mkdir study_strains ref_strains fastqs
-
+mv *fastq.gz fastqs
+mv *_ref.fa *ref.gff ref_strains
+mv 474.fa D23.fa *.bed study_strains
 ```
-Also download pre-made prophage BED files for [D23](https://www.dropbox.com/s/u75us6n1pgy3tka/D23.prophage.bed) and [474](https://www.dropbox.com/s/j8vhsi2qc74zntv/474.prophage.bed). These are the intervals generated by curated prophage annotation; a cruder, much faster estimate can be generated using [Phaster](http://phaster.ca/) online server. 
+The extra reference file St_ncNRA_sORF.fa we've downloaded previously should remain in the main working directory. 
 
-### Reference preparation
-
-After all the files are downloaded and renamed, set up the directory structure and move files to appropriate sub-directories:
-```bash 
-mkdir fastqs      ref_strains    study_strains
-mv    *.fastq.gz  fastqs 
-mv    FA19.*      study_strains
-```
-Now, we'll make a config file. Using your favourite text editor, make a text file named *mult.cfg* and put the following (tab-separated) lines in it: 
+Now, let's make a config file. Using your favourite text editor, make a text file named *mult.cfg* and put the following (tab-separated) lines in it: 
 
 ```bash
 D23_InSPI2_rep1	D23
@@ -234,7 +259,50 @@ Reference	D23_ref
 Reference	SL1344_ref
 ```
 
-We should be all set to go. Let's run the reference preparation in `--multi` mode. Make sure you are in your main working directory - **Stm_tutorial**: 
+We should now be ready to make all the necessary reference files. Let's run the reference preparation in `--multi` mode. Make sure you are in your main working directory - **Stm_tutorial**: 
 
-`prepare_bacterial_reference --multi . mult.cfg -p 16`
+`prepare_bacterial_reference --multi . mult.cfg -p 16 -r St_ncNRA_sORF.fa`
+
+The logs will indicate many performed operations and quality controls. Most important things to note are the following messages: 
+
+>&nbsp;====> Merging blast-based annotation with Prokka-predicted features for strain 474:  
+>&nbsp;...  
+>&nbsp;==> Found 4867 protein-coding (CDS) and 280 non-coding RNA (misc_RNA/ncRNA) features.  
+>&nbsp;====> Merging blast-based annotation with Prokka-predicted features for strain D23:  
+>&nbsp;...  
+>&nbsp;==> Found 4897 protein-coding (CDS) and 287 non-coding RNA (misc_RNA/ncRNA) features.  
+>&nbsp;...  
+>&nbsp;==> Directory /pub37/alexp/data/rnaseq/for_bacpipe_paper/jay_tut/ref_strains/D23_ref was not found and will be created.  
+>&nbsp;...  
+>&nbsp;Output GFF: 4446 CDS, 75 pseudogenes (as CDS), 0 tRNA, 0 rRNA, 0 ncRNA, and 0 others.  
+>&nbsp;Total number of features in the output: 4521.  
+>&nbsp;...  
+>&nbsp;==> Directory /pub37/alexp/data/rnaseq/for_bacpipe_paper/jay_tut/ref_strains/LT2_ref was not found and will be created.  
+>&nbsp;...  
+>&nbsp;Output GFF: 4554 CDS, 39 pseudogenes (as CDS), 85 tRNA, 22 rRNA, 11 ncRNA, and 6 others.  
+>&nbsp;Total number of features in the output: 4717.  
+>&nbsp;...  
+>&nbsp;==> Directory /pub37/alexp/data/rnaseq/for_bacpipe_paper/jay_tut/ref_strains/SL1344_ref was not found and will be created.  
+>&nbsp;...  
+>&nbsp;Output GFF: 4672 CDS, 72 pseudogenes (as CDS), 0 tRNA, 0 rRNA, 0 ncRNA, and 0 others.  
+>&nbsp;Total number of features in the output: 4744.  
+>&nbsp;...  
+>&nbsp;==>  Performing Roary output reformatting; results will be written to roary/presence_absence_unix.csv  
+>&nbsp;==> Generating a table of CDS orthologs.  
+>&nbsp;...  
+>&nbsp;==> DONE generating multi-strain reference!  
+
+After this is complete, you should find the file *orthologs.tsv* in your main working directory. The file contains 5667 lines (+header), of which 
+  *  5367 are CDS 
+  *  290 are ncRNA
+  *  7 are misc (pseudogenes etc)
+  *  3 are repeat_region (CRISPR repeats identified by Prokka)
+
+Of these, 
+  *  4936 are located on (non-prophage part of) the chromosome
+  *  398 are located in a prophage region; 
+  *  333 are located on a plasmid. 
+
+
+
 
