@@ -52,28 +52,27 @@ To install the requirements, use [Bioconda](https://bioconda.github.io/). Below 
 
 ```bash
 conda update conda
-conda create -n bacpipe
+conda create -n bacpipe python=3.7
 conda activate bacpipe
 ```  
-After this, install all the necessary tools in the `bacpipe` environment:
+After this, install all the necessary tools in the `bacpipe` environment (you can copy and enter all the commands in the block; this will take a while!):
 
 ```bash
-conda install -c conda-forge -c bioconda -c defaults prokka=1.14.6
-conda install -c bioconda roary=3.13.0
-conda install deeptools=3.5.0
-conda install fastqc=0.11.9
-conda install star=2.7.6a
-conda install samtools=1.11
-conda install bedtools=2.29.2
-conda install igvtools=2.3.93
-conda install sratools=2.10.0
-conda install subread=2.0.1
-conda install emboss=6.6.0
-conda install diamond=2.0.4
+conda install -y -c conda-forge -c bioconda -c defaults prokka=1.14.6
+conda install -y -c bioconda roary=3.13.0
+conda install -y deeptools=3.5.0
+conda install -y fastqc=0.11.9
+conda install -y star=2.7.6a
+conda install -y samtools=1.11
+conda install -y igvtools=2.3.93
+conda install -y sra-tools=2.10.0
+conda install -y subread=2.0.1
+conda install -y emboss=6.6.0
+conda install -y diamond=2.0.4
 ```
 ## Tutorial
 
-For the easiest introduction, please follow the `bacpipe` [Tutorial](https://github.com/apredeus/multi-bacpipe/blob/master/tutorial/TUTORIAL.md). 
+For the easiest introduction, please follow the `bacpipe` [tutorial](https://github.com/apredeus/multi-bacpipe/blob/master/tutorial/TUTORIAL.md). 
 
 ## Used terms
 We use the following terms during the multi-strain RNA-seq analysis: 
